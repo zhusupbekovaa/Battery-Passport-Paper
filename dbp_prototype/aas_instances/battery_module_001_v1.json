@@ -83,10 +83,10 @@
     }
   ],
   "_metadata": {
-    "_comment": "Dies ist die INSTANZEBENE der AAS. Sie repräsentiert eine konkrete, physische Batterieeinheit. Über 'derivedFrom' ist diese Instanz mit dem zugehörigen Modelltyp verknüpft. Typbezogene Daten (Carbon Footprint, Materialzusammensetzung) werden von der Modell-AAS geerbt.",
+    "_comment": "This is the INSTANCE LEVEL of the AAS. It represents a specific, physical battery unit. Via 'derivedFrom', this instance is linked to the corresponding model type. Type-related data (carbon footprint, material composition) is inherited from the model AAS.",
     "_dataLevel": "Instance",
     "_parentModelId": "urn:dbp:battery:model:001",
-    "_regulatoryBasis": "EU-Batterieverordnung 2023/1542, Art. 77, Anhang XIII",
+    "_regulatoryBasis": "EU Battery Regulation 2023/1542, Art. 77, Annex XIII",
     "_standardsBasis": "IEC 63278-1 (AAS), DIN DKE SPEC 99100:2025-02",
     "_createdAt": "2025-01-15T08:00:00Z",
     "_lastUpdated": "2025-01-15T08:00:00Z",

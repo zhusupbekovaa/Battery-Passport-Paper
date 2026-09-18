@@ -64,9 +64,9 @@
     }
   ],
   "_metadata": {
-    "_comment": "Dies ist die TYPEBENE der AAS. Sie kapselt modellübergreifende Informationen, die für ALLE Instanzen dieses Batteriemodells gelten. Instanzspezifische Daten (Seriennummer, SoH, Ownership) befinden sich in der Instanz-AAS (battery_module_001.json).",
+    "_comment": "This is the TYPE LEVEL of the AAS. It encapsulates cross-model information that applies to ALL instances of this battery model. Instance-specific data (serial number, SoH, ownership) is located in the instance AAS (battery_module_001.json).",
     "_dataLevel": "Type",
-    "_regulatoryBasis": "EU-Batterieverordnung 2023/1542, Art. 13, Art. 38, Anhang XIII",
+    "_regulatoryBasis": "EU Battery Regulation 2023/1542, Art. 13, Art. 38, Annex XIII",
     "_standardsBasis": "IEC 63278-1 (AAS), DIN DKE SPEC 99100:2025-02",
     "_createdAt": "2025-01-15",
     "_version": "1.0.0",

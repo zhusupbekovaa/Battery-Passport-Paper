@@ -1,150 +1,150 @@
-# Digital Battery Pass – Prototyp
+# Digital Battery Pass (DBP) – Prototype
 
-## Übersicht
+## Overview
 
-Dieser Prototyp implementiert einen **Digital Battery Pass (DBP)** auf Basis der
-**Asset Administration Shell (AAS)** nach IEC 63278-1. Er zeigt, wie regulatorische
-Anforderungen der EU-Batterieverordnung in eine interoperable, maschinenlesbare
-Datenarchitektur überführt werden können.
+This prototype implements a **Digital Battery Pass (DBP)** based on the
+**Asset Administration Shell (AAS)** according to IEC 63278-1. It shows how
+regulatory requirements of the EU Battery Regulation can be translated into
+an interoperable, machine-readable data architecture.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        DBP Prototyp                                 │
+│                        DBP Prototype                                │
 │                                                                     │
-│  dbp_prototype/     ← AAS-Datenmodell (8 Submodelle, JSON)         │
-│  dbp-frontend/      ← Web-Viewer mit RBAC (Node.js + Keycloak)     │
-│  basyx/             ← BaSyx-Konfiguration                           │
-│  docker-compose.yml ← Gesamte Infrastruktur                         │
+│  dbp_prototype/     ← AAS data model (8 submodels, JSON)           │
+│  dbp-frontend/      ← Web viewer with RBAC (Node.js + Keycloak)    │
+│  basyx/             ← BaSyx configuration                          │
+│  docker-compose.yml ← Entire infrastructure                        │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Schnellstart
+## Quick Start
 
-### Voraussetzungen
+### Prerequisites
 
 - Docker Desktop ≥ 4.0 / Docker Engine ≥ 20
 - docker compose v2
-- Ports frei: 3000, 3001, 8080, 8081, 8082, 8083
+- Free ports: 3000, 3001, 8080, 8081, 8082, 8083
 
-### 1. Infrastruktur starten
+### 1. Start the infrastructure
 
 ```bash
 docker compose up -d
 ```
 
-Warte bis alle Container `healthy` sind (~40 Sekunden für Keycloak):
+Wait until all containers are `healthy` (~40 seconds for Keycloak):
 
 ```bash
 docker compose ps
 ```
 
-### 2. Submodelle und Assets laden
+### 2. Load submodels and assets
 
 ```bash
 bash dbp_prototype/add_submodels.sh
 ```
 
-### 3. Frontend aufrufen
+### 3. Open the frontend
 
 ```
 http://localhost:3000
 ```
 
-Passport direkt öffnen:
+Open the passport directly:
 ```
 http://localhost:8090/passport/urn%3Auuid%3Aaas-battery-module-001
 ```
 
 ---
 
-## Dienste
+## Services
 
-| Dienst | URL | Beschreibung |
+| Service | URL | Description |
 |--------|-----|--------------|
-| **DBP Frontend** | http://localhost:8090| Passport-Viewer mit RBAC |
-| **BaSyx Web UI** | http://localhost:3000 | AAS-Explorer (BaSyx) |
-| **AAS Environment** | http://localhost:8081 | REST-API für AAS + Submodelle |
-| **AAS Registry** | http://localhost:8082 | Registry für AAS-Instanzen |
-| **SM Registry** | http://localhost:8083 | Registry für Submodelle |
-| **Keycloak** | http://localhost:8080 | Identity Provider |
+| **DBP Frontend** | http://localhost:8090| Passport viewer with RBAC |
+| **BaSyx Web UI** | http://localhost:3000 | AAS explorer (BaSyx) |
+| **AAS Environment** | http://localhost:8081 | REST API for AAS + submodels |
+| **AAS Registry** | http://localhost:8082 | Registry for AAS instances |
+| **SM Registry** | http://localhost:8083 | Registry for submodels |
+| **Keycloak** | http://localhost:8080 | Identity provider |
 
 ---
 
 ## Login (RBAC)
 
-Das Frontend nutzt **OAuth2 / OIDC mit PKCE** gegen Keycloak.
+The frontend uses **OAuth2 / OIDC with PKCE** against Keycloak.
 
-### Testnutzer (Passwort überall: `password`)
+### Test users (password everywhere: `password`)
 
-| Benutzername | Rolle | Zugriff |
+| Username | Role | Access |
 |---|---|---|
-| `hersteller` | manufacturer | Vollzugriff auf alle Daten |
-| `betreiber` | operator | Stammdaten + Performance |
-| `recycler` | recycler | Materialien + Demontage |
-| `behoerde` | authority | Vollzugriff inkl. Due Diligence |
-| `secondlife` | secondLifeOperator | Second-Life-Phase |
-| `remanufacturer` | remanufacturer | Materialien schreiben |
+| `hersteller` | manufacturer | Full access to all data |
+| `betreiber` | operator | Master data + performance |
+| `recycler` | recycler | Materials + disassembly |
+| `behoerde` | authority | Full access, including due diligence |
+| `secondlife` | secondLifeOperator | Second-life phase |
+| `remanufacturer` | remanufacturer | Write access to materials |
 
-Ohne Login → Rolle `public` → nur öffentliche Felder sichtbar (CO₂-Klasse, Status).
+Without login → role `public` → only public fields visible (CO₂ class, status).
 
 ### Keycloak Admin
 
 ```
 URL:       http://localhost:8080
-Benutzer:  admin
-Passwort:  admin
+User:      admin
+Password:  admin
 ```
 
 ---
 
-## Projektstruktur
+## Project Structure
 
 ```
 .
-├── README.md                          ← Diese Datei
-├── docker-compose.yml                 ← Gesamte Infrastruktur
+├── README.md                          ← This file
+├── docker-compose.yml                 ← Entire infrastructure
 │
-├── basyx/                             ← BaSyx-Konfigurationsdateien
-│   ├── aas-env.properties             ← AAS Environment Konfiguration
-│   ├── aas-registry.yml               ← AAS Registry Konfiguration
-│   ├── sm-registry.yml                ← Submodel Registry Konfiguration
-│   ├── aas-discovery.properties       ← Discovery Service Konfiguration
-│   └── basyx-infra.yml                ← Nur Infrastruktur (ohne Frontend)
+├── basyx/                             ← BaSyx configuration files
+│   ├── aas-env.properties             ← AAS Environment configuration
+│   ├── aas-registry.yml               ← AAS Registry configuration
+│   ├── sm-registry.yml                ← Submodel Registry configuration
+│   ├── aas-discovery.properties       ← Discovery Service configuration
+│   └── basyx-infra.yml                ← Infrastructure only (no frontend)
 │
-├── dbp-frontend/                      ← DBP Web-Viewer
+├── dbp-frontend/                      ← DBP web viewer
 │   ├── Dockerfile
-│   ├── server.js                      ← Express-Server mit RBAC-Middleware
+│   ├── server.js                      ← Express server with RBAC middleware
 │   ├── package.json
-│   ├── .env.example                   ← Alle Umgebungsvariablen erklärt
-│   ├── adapters/                      ← Format-Adapter (Prototyp, IDTA-02035, Generic)
+│   ├── .env.example                   ← All environment variables explained
+│   ├── adapters/                      ← Format adapters (Prototype, IDTA-02035, Generic)
 │   │   ├── aas-utils.js
 │   │   ├── adapter-prototype.js
 │   │   ├── adapter-idta-02035.js
 │   │   ├── adapter-generic.js
 │   │   └── adapter-registry.js
-│   ├── rbac/                          ← Zugriffskontrolle
-│   │   ├── policies.json              ← ← ← HIER Zugriffsrechte ändern
+│   ├── rbac/                          ← Access control
+│   │   ├── policies.json              ← ← ← CHANGE ACCESS RIGHTS HERE
 │   │   ├── policies.js
 │   │   └── auth-middleware.js
-│   ├── public/                        ← Browser-Dateien
-│   │   ├── index.html                 ← Startseite / Suche
-│   │   ├── passport.html              ← Passport-Detailansicht
-│   │   └── auth.js                    ← PKCE OAuth2-Client
+│   ├── public/                        ← Browser files
+│   │   ├── index.html                 ← Landing page / search
+│   │   ├── passport.html              ← Passport detail view
+│   │   └── auth.js                    ← PKCE OAuth2 client
 │   ├── keycloak/
-│   │   └── realm-export.json          ← Keycloak-Realm (auto-import)
+│   │   └── realm-export.json          ← Keycloak realm (auto-import)
 │   └── docs/
-│       ├── frontend.md                ← Frontend-Dokumentation
-│       └── rbac.md                    ← RBAC-Dokumentation
+│       ├── frontend.md                ← Frontend documentation
+│       └── rbac.md                    ← RBAC documentation
 │
-├── dbp_prototype/                     ← AAS-Datenmodell (JSON-Dateien)
-│   ├── add_submodels.sh               ← Script: Daten in BaSyx laden
+├── dbp_prototype/                     ← AAS data model (JSON files)
+│   ├── add_submodels.sh               ← Script: load data into BaSyx
 │   ├── aas_instances/
-│   │   └── battery_module_001.json    ← AAS-Instanz (Seriennummer)
+│   │   └── battery_module_001.json    ← AAS instance (serial number)
 │   ├── aas_model/
-│   │   └── battery_model_001.json     ← AAS-Modell (Typebene)
-│   ├── submodel_instances/            ← 9 Submodell-JSONs (Dummy-Daten)
+│   │   └── battery_model_001.json     ← AAS model (type level)
+│   ├── submodel_instances/            ← 9 submodel JSONs (dummy data)
 │   │   ├── sm_general_product_information_battery_001.json
 │   │   ├── sm_carbon_footprint_battery_001.json
 │   │   ├── sm_material_composition_battery_001.json
@@ -154,50 +154,51 @@ Passwort:  admin
 │   │   ├── sm_labels_battery_001.json
 │   │   ├── sm_due_diligence_battery_001.json
 │   │   └── sm_general_product_information_battery_001_refVariant.json
-│   ├── submodel_definitions/          ← Markdown-Dokumentation der Submodelle
+│   ├── submodel_definitions/          ← Markdown documentation of the submodels
 │   └── docs/
-│       └── README.md                  ← Prototyp-Dokumentation
+│       └── README.md                  ← Prototype documentation
 │
-└── aas/                               ← (Reserviert für zukünftige AAS-Artefakte)
+└── aas/                               ← (Reserved for future AAS artifacts)
 ```
 
 ---
 
-## RBAC – Zugriffsrechte anpassen
+## RBAC – Adjusting Access Rights
 
-Zugriffsrechte werden **ausschließlich** in `dbp-frontend/rbac/policies.json`
-konfiguriert. Kein Code-Change nötig.
+Access rights are configured **exclusively** in `dbp-frontend/rbac/policies.json`.
+No code changes required.
 
-### Beispiel: Betreiber erhält CO₂-Zugriff
+### Example: giving the operator CO₂ access
 
 ```json
 // dbp-frontend/rbac/policies.json
 "carbonFootprint": {
-  "operator": "read"   // war null
+  "operator": "read"   // was null
 }
 ```
 
-Mit `RBAC_HOT_RELOAD=true` in `docker-compose.yml` wirkt das sofort ohne Neustart.
+With `RBAC_HOT_RELOAD=true` in `docker-compose.yml`, this takes effect
+immediately without a restart.
 
-→ Vollständige Dokumentation: `dbp-frontend/docs/rbac.md`
+→ Full documentation: `dbp-frontend/docs/rbac.md`
 
 ---
 
-## Adapter-System
+## Adapter System
 
-Das Frontend erkennt automatisch das Format der geladenen Submodelle:
+The frontend automatically detects the format of the loaded submodels:
 
-| Adapter | Erkennungsmerkmal | Felder |
+| Adapter | Detection feature | Fields |
 |---|---|---|
-| **IDTA-02035** | `semanticId` enthält `idta/battery/...` | IDTA-Feldnamen |
-| **Prototyp** | `idShort` ist `GeneralProductInformation` etc. | Eigene Feldnamen |
-| **Generic** | Fallback (immer aktiv) | Heuristik |
+| **IDTA-02035** | `semanticId` contains `idta/battery/...` | IDTA field names |
+| **Prototype** | `idShort` is `GeneralProductInformation` etc. | Custom field names |
+| **Generic** | Fallback (always active) | Heuristic |
 
-→ Dokumentation: `dbp-frontend/docs/frontend.md`, Kapitel 9–10
+→ Documentation: `dbp-frontend/docs/frontend.md`, chapters 9–10
 
 ---
 
-## Nur BaSyx starten (ohne Frontend + Keycloak)
+## Running BaSyx Only (without Frontend + Keycloak)
 
 ```bash
 docker compose -f basyx/basyx-infra.yml up -d
@@ -207,7 +208,7 @@ bash dbp_prototype/add_submodels.sh
 
 ---
 
-## Entwicklungsmodus (ohne Keycloak)
+## Development Mode (without Keycloak)
 
 ```bash
 cd dbp-frontend

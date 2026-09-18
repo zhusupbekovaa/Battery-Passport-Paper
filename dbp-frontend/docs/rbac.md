@@ -1,114 +1,114 @@
-# RBAC – Rollenbasierte Zugriffskontrolle
+# RBAC – Role-Based Access Control
 
-**Projekt:** Digital Battery Passport Viewer  
-**Masterarbeit:** Zhusupbekova, Universität Siegen, 2025  
-**Regulatorische Grundlage:** EU-Batterieverordnung 2023/1542, Art. 77 (Datensouveränität)  
-**Technische Basis:** OAuth2 / OIDC · PKCE · Keycloak 24 · JWT (RS256)
-
----
-
-## Inhaltsverzeichnis
-
-1. [Konzept & Architektur](#1-konzept--architektur)
-2. [Rollen & Zugriffslevels](#2-rollen--zugriffslevels)
-3. [Zugriffsmatrizen](#3-zugriffsmatrizen)
-4. [policies.json – Konfiguration](#4-policiesjson--konfiguration)
-5. [Umgebungsvariablen](#5-umgebungsvariablen)
-6. [Login-Flow (PKCE)](#6-login-flow-pkce)
-7. [Keycloak einrichten](#7-keycloak-einrichten)
-8. [API-Endpunkte](#8-api-endpunkte)
-9. [Entwicklungsmodus (ohne Keycloak)](#9-entwicklungsmodus-ohne-keycloak)
-10. [Neue Rolle hinzufügen](#10-neue-rolle-hinzufügen)
-11. [Zugriffsrecht ändern](#11-zugriffsrecht-ändern)
-12. [Fehlerbehebung](#12-fehlerbehebung)
+**Project:** Digital Battery Passport Viewer
+**Master's thesis:** Zhusupbekova, University of Siegen, 2025
+**Regulatory basis:** EU Battery Regulation 2023/1542, Art. 77 (data sovereignty)
+**Technical basis:** OAuth2 / OIDC · PKCE · Keycloak 24 · JWT (RS256)
 
 ---
 
-## 1. Konzept & Architektur
+## Table of Contents
 
-### Warum RBAC im DBP?
+1. [Concept & Architecture](#1-concept--architecture)
+2. [Roles & Access Levels](#2-roles--access-levels)
+3. [Access Matrices](#3-access-matrices)
+4. [policies.json – Configuration](#4-policiesjson--configuration)
+5. [Environment Variables](#5-environment-variables)
+6. [Login Flow (PKCE)](#6-login-flow-pkce)
+7. [Setting Up Keycloak](#7-setting-up-keycloak)
+8. [API Endpoints](#8-api-endpoints)
+9. [Development Mode (without Keycloak)](#9-development-mode-without-keycloak)
+10. [Adding a New Role](#10-adding-a-new-role)
+11. [Changing an Access Right](#11-changing-an-access-right)
+12. [Troubleshooting](#12-troubleshooting)
 
-Die EU-Batterieverordnung 2023/1542 verlangt in Art. 77, dass nicht alle Informationen
-eines Batteriepasses öffentlich zugänglich sind. Lieferketteninformationen, Eigentumsdaten
-und detaillierte Nachhaltigkeitsnachweise unterliegen Zugriffseinschränkungen.
-Das RBAC-System setzt die Zugriffsmatrizen aus Tabelle 5.6 und 5.7 der Masterarbeit
-technisch um.
+---
 
-### Systemübersicht
+## 1. Concept & Architecture
+
+### Why RBAC in the DBP?
+
+The EU Battery Regulation 2023/1542 requires, in Art. 77, that not all
+information in a battery passport be publicly accessible. Supply chain
+information, ownership data, and detailed sustainability evidence are
+subject to access restrictions. The RBAC system technically implements
+the access matrices from tables 5.6 and 5.7 of the master's thesis.
+
+### System Overview
 
 ```
 Browser                 server.js              Keycloak
    │                        │                      │
    │── GET /api/passport ──►│                      │
-   │   (Bearer Token)       │── JWKS-Abruf ───────►│
-   │                        │◄── Public Key ────────│
-   │                        │── JWT verifizieren    │
-   │                        │── Rolle extrahieren   │
+   │   (Bearer token)       │── JWKS request ─────►│
+   │                        │◄── Public key ────────│
+   │                        │── Verify JWT          │
+   │                        │── Extract role        │
    │                        │── applyPolicy()       │
-   │◄── gefiltertes JSON ───│                      │
+   │◄── filtered JSON ──────│                      │
 ```
 
-### Dreischichtiger Schutz
+### Three-Layer Protection
 
-| Schicht | Ort | Was wird geschützt |
+| Layer | Location | What is protected |
 |---|---|---|
-| **Token-Validierung** | `auth-middleware.js` | Jeder API-Aufruf wird geprüft |
-| **Policy-Filter** | `policies.js` + `policies.json` | Felder im Passport-Objekt |
-| **UI-Anzeige** | `passport.html` | Gesperrte Felder zeigen 🔒-Overlay |
+| **Token validation** | `auth-middleware.js` | Every API call is checked |
+| **Policy filter** | `policies.js` + `policies.json` | Fields in the passport object |
+| **UI display** | `passport.html` | Locked fields show a 🔒 overlay |
 
-> **Wichtig:** Der echte Schutz liegt auf Schicht 1+2 (server.js). Die UI-Anzeige
-> (Schicht 3) ist rein visuell und kein Sicherheitsmerkmal.
+> **Important:** The actual protection lives in layers 1+2 (server.js). The
+> UI display (layer 3) is purely visual and not a security feature.
 
-### Dateistruktur
+### File Structure
 
 ```
 dbp-frontend/
 ├── rbac/
-│   ├── policies.json        ← EINZIGE Datei für Zugriffsänderungen
-│   ├── policies.js          ← Lädt JSON, stellt applyPolicy() bereit
-│   └── auth-middleware.js   ← JWT-Validierung gegen Keycloak
+│   ├── policies.json        ← ONLY file to edit for access changes
+│   ├── policies.js          ← Loads the JSON, provides applyPolicy()
+│   └── auth-middleware.js   ← JWT validation against Keycloak
 ├── public/
-│   └── auth.js              ← PKCE-Client im Browser
+│   └── auth.js              ← PKCE client in the browser
 ├── keycloak/
-│   └── realm-export.json    ← Keycloak-Realm (auto-importiert)
-└── server.js                ← Bindet Middleware + Policy-Filter ein
+│   └── realm-export.json    ← Keycloak realm (auto-imported)
+└── server.js                ← Wires in the middleware + policy filter
 ```
 
 ---
 
-## 2. Rollen & Zugriffslevels
+## 2. Roles & Access Levels
 
-### Rollen
+### Roles
 
-Das System kennt sieben Rollen, direkt abgeleitet aus der Stakeholder-Analyse
-der Masterarbeit (Kapitel 5.1.3):
+The system defines seven roles, derived directly from the stakeholder
+analysis in the master's thesis (chapter 5.1.3):
 
-| Rolle (intern) | Anzeigename | Lifecycle-Phase | Farbe |
+| Role (internal) | Display name | Lifecycle phase | Color |
 |---|---|---|---|
-| `public` | Öffentlich | beide | grau |
-| `manufacturer` | Hersteller | Original | blau |
-| `operator` | Betreiber | Original | gelb |
-| `recycler` | Recycler | beide | orange-rot |
-| `authority` | Behörde | beide | grün |
-| `secondLifeOperator` | Second-Life-Betreiber | Second Life | lila |
-| `remanufacturer` | Remanufacturer | Second Life | orange |
+| `public` | Public | both | gray |
+| `manufacturer` | Manufacturer | Original | blue |
+| `operator` | Operator | Original | yellow |
+| `recycler` | Recycler | both | orange-red |
+| `authority` | Authority | both | green |
+| `secondLifeOperator` | Second-life operator | Second life | purple |
+| `remanufacturer` | Remanufacturer | Second life | orange |
 
-> `public` ist die Standardrolle bei fehlendem oder ungültigem Token.
-> Kein Keycloak-Login nötig – öffentliche Daten sind immer sichtbar.
+> `public` is the default role when a token is missing or invalid.
+> No Keycloak login required – public data is always visible.
 
-### Zugriffslevels
+### Access Levels
 
-| Level | Symbol | Bedeutung |
+| Level | Symbol | Meaning |
 |---|---|---|
-| `"full"` | ✅ | Vollzugriff – alle Felder sichtbar, Schreiben möglich |
-| `"read"` | 👁 | Lesezugriff – alle Felder sichtbar, kein Schreiben |
-| `"summary"` | 📋 | Nur zusammengefasste Felder sichtbar (z. B. CO₂-Klasse, kein Detail) |
-| `"write"` | ✏️ | Schreibzugriff (impliziert read) |
-| `null` | 🔒 | Kein Zugriff – Feld erscheint gesperrt im Frontend |
+| `"full"` | ✅ | Full access – all fields visible, writing allowed |
+| `"read"` | 👁 | Read access – all fields visible, no writing |
+| `"summary"` | 📋 | Only summarized fields visible (e.g. CO₂ class, no detail) |
+| `"write"` | ✏️ | Write access (implies read) |
+| `null` | 🔒 | No access – field appears locked in the frontend |
 
-### Rollenpriorität
+### Role Priority
 
-Hat ein Nutzer mehrere Rollen in Keycloak, greift die höchste Priorität:
+If a user has multiple roles in Keycloak, the highest priority wins:
 
 ```
 authority > manufacturer > secondLifeOperator > remanufacturer > recycler > operator
@@ -116,136 +116,137 @@ authority > manufacturer > secondLifeOperator > remanufacturer > recycler > oper
 
 ---
 
-## 3. Zugriffsmatrizen
+## 3. Access Matrices
 
-### Original-Phase (Tabelle 5.6 der Masterarbeit)
+### Original Phase (Table 5.6 of the master's thesis)
 
-Aktiv wenn `BatteryStatus = "Original"`.
+Active when `BatteryStatus = "Original"`.
 
-| Submodell / Feld | public | manufacturer | operator | recycler | authority |
+| Submodel / field | public | manufacturer | operator | recycler | authority |
 |---|:---:|:---:|:---:|:---:|:---:|
-| **Identifikation** | 👁 | ✅ | 👁 | 👁 | ✅ |
-| **Hersteller** | 👁 | ✅ | 👁 | 👁 | ✅ |
-| **Technisch** | 👁 | ✅ | 👁 | 👁 | ✅ |
-| **CO₂-Fußabdruck** | 📋 ¹ | ✅ | 🔒 | 🔒 | ✅ |
-| **Materialien** | 🔒 | ✅ | 🔒 | 👁 | ✅ |
-| **Rezyklatanteile** | 🔒 | ✅ | 🔒 | 👁 | ✅ |
-| **Due Diligence** | 🔒 | ✅ | 🔒 | 🔒 | ✅ |
-| **Eigentum** | 🔒 | ✏️ | 🔒 | 🔒 | ✅ |
+| **Identification** | 👁 | ✅ | 👁 | 👁 | ✅ |
+| **Manufacturer** | 👁 | ✅ | 👁 | 👁 | ✅ |
+| **Technical** | 👁 | ✅ | 👁 | 👁 | ✅ |
+| **Carbon footprint** | 📋 ¹ | ✅ | 🔒 | 🔒 | ✅ |
+| **Materials** | 🔒 | ✅ | 🔒 | 👁 | ✅ |
+| **Recycled content** | 🔒 | ✅ | 🔒 | 👁 | ✅ |
+| **Due diligence** | 🔒 | ✅ | 🔒 | 🔒 | ✅ |
+| **Ownership** | 🔒 | ✏️ | 🔒 | 🔒 | ✅ |
 | **Performance / SoH** | 🔒 | ✅ | 👁 | 🔒 | ✅ |
-| **Lebenszyklus** | 📋 ² | ✅ | 👁 | 👁 | ✅ |
-| **Zertifikate** | 👁 | ✅ | 👁 | 👁 | ✅ |
+| **Lifecycle** | 📋 ² | ✅ | 👁 | 👁 | ✅ |
+| **Certificates** | 👁 | ✅ | 👁 | 👁 | ✅ |
 | **Governance** | 🔒 | ✅ | 👁 | 🔒 | ✅ |
 
-¹ Öffentlich: nur CO₂-Gesamtwert und Klasse (kein LCA-Detail)  
-² Öffentlich: nur Lifecycle-Status
+¹ Public: only total CO₂ value and class (no LCA detail)
+² Public: only lifecycle status
 
-### Second-Life-Phase (Tabelle 5.7 der Masterarbeit)
+### Second-Life Phase (Table 5.7 of the master's thesis)
 
-Aktiv wenn `BatteryStatus = "Repurposed"` oder enthält `"secondlife"`.
+Active when `BatteryStatus = "Repurposed"` or contains `"secondlife"`.
 
-| Submodell / Feld | public | manufacturer | secondLifeOp. | remanufacturer | recycler | authority |
+| Submodel / field | public | manufacturer | secondLifeOp. | remanufacturer | recycler | authority |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Identifikation** | 👁 | 👁 | ✅ | 👁 | 👁 | ✅ |
-| **Hersteller** | 👁 | 👁 | ✅ | 👁 | 👁 | ✅ |
-| **Technisch** | 👁 | 👁 | ✅ | 👁 | 👁 | ✅ |
-| **CO₂-Fußabdruck** | 📋 | 👁 | ✏️ | 🔒 | 🔒 | ✅ |
-| **Materialien** | 🔒 | 👁 | 🔒 | ✏️ | ✅ | ✅ |
-| **Rezyklatanteile** | 🔒 | 👁 | 🔒 | ✏️ | ✅ | ✅ |
-| **Due Diligence** | 🔒 | 👁 | 🔒 | 🔒 | 🔒 | ✅ |
-| **Eigentum** | 🔒 | 👁 | ✏️ | 🔒 | 🔒 | ✅ |
+| **Identification** | 👁 | 👁 | ✅ | 👁 | 👁 | ✅ |
+| **Manufacturer** | 👁 | 👁 | ✅ | 👁 | 👁 | ✅ |
+| **Technical** | 👁 | 👁 | ✅ | 👁 | 👁 | ✅ |
+| **Carbon footprint** | 📋 | 👁 | ✏️ | 🔒 | 🔒 | ✅ |
+| **Materials** | 🔒 | 👁 | 🔒 | ✏️ | ✅ | ✅ |
+| **Recycled content** | 🔒 | 👁 | 🔒 | ✏️ | ✅ | ✅ |
+| **Due diligence** | 🔒 | 👁 | 🔒 | 🔒 | 🔒 | ✅ |
+| **Ownership** | 🔒 | 👁 | ✏️ | 🔒 | 🔒 | ✅ |
 | **Performance / SoH** | 🔒 | 👁 | ✏️ | ✏️ | 🔒 | ✅ |
-| **Lebenszyklus** | 📋 | 👁 | ✏️ | ✏️ | 👁 | ✅ |
-| **Zertifikate** | 👁 | 👁 | 👁 | ✏️ | 👁 | ✅ |
+| **Lifecycle** | 📋 | 👁 | ✏️ | ✏️ | 👁 | ✅ |
+| **Certificates** | 👁 | 👁 | 👁 | ✏️ | 👁 | ✅ |
 | **Governance** | 🔒 | 👁 | ✅ | 👁 | 🔒 | ✅ |
 
-### Lifecycle-Phasenerkennung
+### Lifecycle Phase Detection
 
-Die Phase wird automatisch aus dem Passport-Objekt abgeleitet:
+The phase is automatically derived from the passport object:
 
 ```javascript
 // policies.js – detectLifecyclePhase()
 status.includes("repurposed") || status.includes("secondlife") → "secondLife"
-sonst                                                           → "original"
+otherwise                                                      → "original"
 ```
 
-Der Status kommt aus `identification.status` oder `lifecycle.status` des
-normalisierten Passport-Objekts (Wert aus dem BaSyx-Submodell).
+The status comes from `identification.status` or `lifecycle.status` of
+the normalized passport object (value taken from the BaSyx submodel).
 
-### Summary-Felder
+### Summary Fields
 
-Wenn ein Feld den Level `"summary"` hat, werden nur diese Teilfelder zurückgegeben:
+If a field has the `"summary"` level, only these sub-fields are returned:
 
-| Feld | Öffentlich sichtbare Teilfelder |
+| Field | Publicly visible sub-fields |
 |---|---|
 | `carbonFootprint` | `total`, `class`, `unit` |
 | `lifecycle` | `status` |
 
-Weitere Summary-Felder können in `policies.json` unter `summaryFields` definiert werden.
+Additional summary fields can be defined in `policies.json` under
+`summaryFields`.
 
 ---
 
-## 4. policies.json – Konfiguration
+## 4. policies.json – Configuration
 
-Die Datei `rbac/policies.json` ist die **einzige Stelle**, die für
-Zugriffsänderungen bearbeitet werden muss. Kein Code-Change nötig.
+The file `rbac/policies.json` is the **only place** that needs to be
+edited for access changes. No code changes required.
 
-### Dateistruktur
+### File Structure
 
 ```json
 {
   "roles": {
-    "<rollenname>": {
-      "label":  "Anzeigename",
-      "color":  "#hexfarbe",
-      "border": "#hexfarbe",
-      "bg":     "#hexfarbe"
+    "<roleName>": {
+      "label":  "Display name",
+      "color":  "#hexcolor",
+      "border": "#hexcolor",
+      "bg":     "#hexcolor"
     }
   },
 
   "rolePriority": ["authority", "manufacturer", ...],
 
   "summaryFields": {
-    "<feldname>": ["teilfeld1", "teilfeld2"]
+    "<fieldName>": ["subfield1", "subfield2"]
   },
 
   "policies": {
     "<lifecyclePhase>": {
-      "<feldname>": {
-        "<rolle>": "full" | "read" | "summary" | "write" | null
+      "<fieldName>": {
+        "<role>": "full" | "read" | "summary" | "write" | null
       }
     }
   }
 }
 ```
 
-### `roles` – Rollendefinition
+### `roles` – Role Definition
 
 ```json
 "manufacturer": {
-  "label":  "Hersteller",   ← Anzeigename im Frontend-Badge
-  "color":  "#74c0fc",      ← Textfarbe des Badges
-  "border": "#2a4a5e",      ← Rahmenfarbe des Badges
-  "bg":     "#1a2e3d"       ← Hintergrundfarbe des Badges
+  "label":  "Manufacturer", ← display name in the frontend badge
+  "color":  "#74c0fc",      ← badge text color
+  "border": "#2a4a5e",      ← badge border color
+  "bg":     "#1a2e3d"       ← badge background color
 }
 ```
 
-### `rolePriority` – Rollenpriorität
+### `rolePriority` – Role Priority
 
-Wenn ein Nutzer mehrere Keycloak-Rollen hat, gewinnt die erste in dieser Liste:
+If a user has multiple Keycloak roles, the first one in this list wins:
 
 ```json
 "rolePriority": [
-  "authority",           ← höchste Priorität
+  "authority",           ← highest priority
   "manufacturer",
   "secondLifeOperator",
   "remanufacturer",
   "recycler",
-  "operator"             ← niedrigste Priorität (public hat keine)
+  "operator"             ← lowest priority (public has none)
 ]
 ```
 
-### `summaryFields` – Teilfelder für Summary-Level
+### `summaryFields` – Sub-fields for the Summary Level
 
 ```json
 "summaryFields": {
@@ -254,16 +255,16 @@ Wenn ein Nutzer mehrere Keycloak-Rollen hat, gewinnt die erste in dieser Liste:
 }
 ```
 
-Wenn eine Rolle `"summary"` für `carbonFootprint` hat, sieht sie nur
-`total`, `class` und `unit` – nicht `rawMaterial`, `verifier` etc.
+If a role has `"summary"` for `carbonFootprint`, it only sees `total`,
+`class`, and `unit` – not `rawMaterial`, `verifier`, etc.
 
-### `policies` – Zugriffsmatrix
+### `policies` – Access Matrix
 
 ```json
 "policies": {
   "original": {
     "carbonFootprint": {
-      "_comment": "Öffentlich nur Zusammenfassung",
+      "_comment": "Public gets summary only",
       "public":       "summary",
       "manufacturer": "full",
       "operator":     null,
@@ -274,126 +275,126 @@ Wenn eine Rolle `"summary"` für `carbonFootprint` hat, sieht sie nur
 }
 ```
 
-> **`_comment`-Felder** werden ignoriert und dienen nur der Dokumentation.
+> **`_comment` fields** are ignored and serve documentation purposes only.
 
-### Hot-Reload
+### Hot Reload
 
-Mit `RBAC_HOT_RELOAD=true` liest der Server `policies.json` bei jedem API-Aufruf
-neu ein – kein Neustart nötig bei Änderungen.
+With `RBAC_HOT_RELOAD=true`, the server re-reads `policies.json` on every
+API call – no restart needed for changes.
 
 ```bash
 # In docker-compose.yml:
 RBAC_HOT_RELOAD: "true"
 
-# Dann Zugriffsrecht ändern:
-# policies.json bearbeiten → sofort wirksam
+# Then change an access right:
+# edit policies.json → takes effect immediately
 ```
 
 ---
 
-## 5. Umgebungsvariablen
+## 5. Environment Variables
 
-Alle RBAC-Einstellungen werden über Umgebungsvariablen konfiguriert.
-Vorlage: `.env.example`
+All RBAC settings are configured via environment variables.
+Template: `.env.example`
 
-| Variable | Standard | Beschreibung |
+| Variable | Default | Description |
 |---|---|---|
-| `RBAC_ENABLED` | `true` | `false` = Dev-Modus, kein Login erforderlich |
-| `KEYCLOAK_URL` | `http://keycloak:8080` | Interne Container-URL (Server → Keycloak) |
-| `KEYCLOAK_EXTERNAL_URL` | *(leer)* | Externe URL (Browser → Keycloak), z. B. `http://192.168.1.10:8080` |
-| `KEYCLOAK_REALM` | `dbp-realm` | Realm-Name in Keycloak |
-| `KEYCLOAK_CLIENT_ID` | `dbp-frontend` | Client-ID (muss in Keycloak angelegt sein) |
-| `KEYCLOAK_ROLE_CLAIM` | `realm_access.roles` | JWT-Pfad zu den Rollen-Claims |
-| `JWKS_CACHE_TTL` | `300000` | JWKS-Cache in ms (Standard: 5 Minuten) |
-| `DEV_ROLE` | `manufacturer` | Rolle im Dev-Modus (nur wenn `RBAC_ENABLED=false`) |
-| `RBAC_HOT_RELOAD` | `false` | `true` = policies.json bei jedem Request neu lesen |
+| `RBAC_ENABLED` | `true` | `false` = dev mode, no login required |
+| `KEYCLOAK_URL` | `http://keycloak:8080` | Internal container URL (server → Keycloak) |
+| `KEYCLOAK_EXTERNAL_URL` | *(empty)* | External URL (browser → Keycloak), e.g. `http://192.168.1.10:8080` |
+| `KEYCLOAK_REALM` | `dbp-realm` | Realm name in Keycloak |
+| `KEYCLOAK_CLIENT_ID` | `dbp-frontend` | Client ID (must exist in Keycloak) |
+| `KEYCLOAK_ROLE_CLAIM` | `realm_access.roles` | JWT path to the role claims |
+| `JWKS_CACHE_TTL` | `300000` | JWKS cache in ms (default: 5 minutes) |
+| `DEV_ROLE` | `manufacturer` | Role in dev mode (only when `RBAC_ENABLED=false`) |
+| `RBAC_HOT_RELOAD` | `false` | `true` = re-read policies.json on every request |
 
 ### KEYCLOAK_URL vs. KEYCLOAK_EXTERNAL_URL
 
-Dieser Unterschied ist wichtig bei Docker-Deployments:
+This distinction matters for Docker deployments:
 
 ```
-KEYCLOAK_URL         = http://keycloak:8080   ← nur im Docker-Netz auflösbar
-                       Wird für JWKS-Abruf und JWT-Validierung genutzt (server-seitig)
+KEYCLOAK_URL         = http://keycloak:8080   ← resolvable only within the Docker network
+                       Used for JWKS lookup and JWT validation (server-side)
 
-KEYCLOAK_EXTERNAL_URL= http://192.168.1.10:8080  ← vom Browser erreichbar
-                       Wird über /api/auth/config ans Frontend geliefert
-                       Für Login-Redirect, Token-Exchange (browser-seitig)
+KEYCLOAK_EXTERNAL_URL= http://192.168.1.10:8080  ← reachable from the browser
+                       Delivered to the frontend via /api/auth/config
+                       For login redirect, token exchange (browser-side)
 ```
 
-Lokal ohne Docker (beide auf localhost):
+Locally without Docker (both on localhost):
 ```bash
 KEYCLOAK_URL=http://localhost:8080
-# KEYCLOAK_EXTERNAL_URL weglassen oder gleich setzen
+# omit KEYCLOAK_EXTERNAL_URL, or set it the same
 ```
 
 ### KEYCLOAK_ROLE_CLAIM
 
-Bestimmt, wo im JWT-Token die Rollen stehen:
+Determines where in the JWT token the roles are located:
 
 ```bash
-# Keycloak-Standard (Realm-Rollen):
+# Keycloak default (realm roles):
 KEYCLOAK_ROLE_CLAIM=realm_access.roles
 
-# Client-spezifische Rollen:
+# Client-specific roles:
 KEYCLOAK_ROLE_CLAIM=resource_access.dbp-frontend.roles
 ```
 
 ---
 
-## 6. Login-Flow (PKCE)
+## 6. Login Flow (PKCE)
 
-Das Frontend verwendet **Authorization Code Flow mit PKCE** (RFC 7636).
-Kein Client-Secret nötig – geeignet für Public Clients (Browser-Apps).
+The frontend uses the **Authorization Code Flow with PKCE** (RFC 7636).
+No client secret required – suitable for public clients (browser apps).
 
-### Ablauf
+### Flow
 
 ```
-1. Nutzer klickt "Anmelden"
+1. User clicks "Sign in"
         │
         ▼
-2. auth.login() generiert:
-   • code_verifier  (zufällig, 64 Bytes)
-   • code_challenge = SHA256(verifier), Base64url-encoded
-   • state          (CSRF-Schutz)
+2. auth.login() generates:
+   • code_verifier  (random, 64 bytes)
+   • code_challenge = SHA256(verifier), base64url-encoded
+   • state          (CSRF protection)
         │
         ▼
-3. Redirect → Keycloak Login-Seite
+3. Redirect → Keycloak login page
    /realms/dbp-realm/protocol/openid-connect/auth
    ?response_type=code
    &client_id=dbp-frontend
    &redirect_uri=http://localhost:8090/
-   &code_challenge=<SHA256-Hash>
+   &code_challenge=<SHA256 hash>
    &code_challenge_method=S256
-   &state=<zufällig>
+   &state=<random>
         │
         ▼
-4. Nutzer gibt Nutzername + Passwort ein
+4. User enters username + password
         │
         ▼
-5. Keycloak redirectet zurück:
+5. Keycloak redirects back:
    http://localhost:8090/?code=<auth-code>&state=<state>
         │
         ▼
-6. auth.handleCallback() prüft state, tauscht Code gegen Token:
+6. auth.handleCallback() checks state, exchanges the code for a token:
    POST /realms/dbp-realm/protocol/openid-connect/token
    { grant_type: "authorization_code", code: <code>,
      code_verifier: <verifier>, client_id: "dbp-frontend" }
         │
         ▼
-7. Keycloak antwortet mit access_token + refresh_token
-   Token wird in sessionStorage gespeichert
+7. Keycloak responds with access_token + refresh_token
+   Token is stored in sessionStorage
         │
         ▼
-8. auth.apiFetch() hängt bei jedem API-Call den Token an:
+8. auth.apiFetch() attaches the token to every API call:
    GET /api/passport/:id
    Authorization: Bearer <access_token>
         │
         ▼
-9. server.js validiert Token, extrahiert Rolle, filtert Daten
+9. server.js validates the token, extracts the role, filters the data
 ```
 
-### Token-Speicherung
+### Token Storage
 
 ```javascript
 sessionStorage.setItem("dbp_access_token",  data.access_token);
@@ -401,42 +402,42 @@ sessionStorage.setItem("dbp_refresh_token", data.refresh_token);
 sessionStorage.setItem("dbp_user_info",     JSON.stringify(userInfo));
 ```
 
-> `sessionStorage` wird beim Schließen des Tabs geleert.
-> Token ist **nicht persistent** über Browser-Sitzungen hinweg.
+> `sessionStorage` is cleared when the tab is closed.
+> The token is **not persistent** across browser sessions.
 
-### auth.js – öffentliche API
+### auth.js – Public API
 
 ```javascript
-// Initialisierung (beim Laden der Seite aufrufen)
+// Initialization (call when the page loads)
 const state = await auth.init();
-// → { loggedIn: true, role: "manufacturer", roleLabel: "Hersteller",
+// → { loggedIn: true, role: "manufacturer", roleLabel: "Manufacturer",
 //     roleColor: "#74c0fc", userInfo: { name, email, username } }
 
-// Login starten (Redirect zu Keycloak)
+// Start login (redirect to Keycloak)
 auth.login();
 
-// Logout (Keycloak-Session beenden + Storage leeren)
+// Logout (end the Keycloak session + clear storage)
 auth.logout();
 
-// fetch() mit automatischem Bearer-Token
+// fetch() with an automatic bearer token
 const res = await auth.apiFetch("/api/passport/urn%3A...");
 const data = await res.json();
 
-// Hilfsfunktionen
+// Helper functions
 auth.getRole();       // → "manufacturer"
-auth.getRoleLabel();  // → "Hersteller"
+auth.getRoleLabel();  // → "Manufacturer"
 auth.isLoggedIn();    // → true
 auth.getUserInfo();   // → { name, email, username } | null
-auth.getState();      // → vollständiges State-Objekt
+auth.getState();      // → full state object
 ```
 
 ---
 
-## 7. Keycloak einrichten
+## 7. Setting Up Keycloak
 
-### Automatischer Import (docker compose)
+### Automatic Import (docker compose)
 
-Der Realm wird beim ersten Start automatisch importiert:
+The realm is imported automatically on first startup:
 
 ```yaml
 # docker-compose.yml
@@ -446,32 +447,32 @@ keycloak:
     - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
 ```
 
-Die Datei `keycloak/realm-export.json` enthält:
-- Realm `dbp-realm` mit allen Einstellungen
-- Client `dbp-frontend` (Public Client, PKCE aktiviert)
-- 6 Testrollen: `manufacturer`, `operator`, `recycler`, `authority`, `secondLifeOperator`, `remanufacturer`
-- 6 Testnutzer (alle Passwort: `password`)
+The file `keycloak/realm-export.json` contains:
+- Realm `dbp-realm` with all settings
+- Client `dbp-frontend` (public client, PKCE enabled)
+- 6 test roles: `manufacturer`, `operator`, `recycler`, `authority`, `secondLifeOperator`, `remanufacturer`
+- 6 test users (all with password: `password`)
 
-### Testnutzer
+### Test Users
 
-| Benutzername | Passwort | Rolle | Lifecycle-Phase |
+| Username | Password | Role | Lifecycle phase |
 |---|---|---|---|
 | `hersteller` | `password` | manufacturer | Original |
 | `betreiber` | `password` | operator | Original |
-| `recycler` | `password` | recycler | Original + Second Life |
-| `behoerde` | `password` | authority | Original + Second Life |
-| `secondlife` | `password` | secondLifeOperator | Second Life |
-| `remanufacturer` | `password` | remanufacturer | Second Life |
+| `recycler` | `password` | recycler | Original + second life |
+| `behoerde` | `password` | authority | Original + second life |
+| `secondlife` | `password` | secondLifeOperator | Second life |
+| `remanufacturer` | `password` | remanufacturer | Second life |
 
 ### Keycloak Admin UI
 
 ```
 URL:       http://localhost:8080
-Benutzer:  admin
-Passwort:  admin
+User:      admin
+Password:  admin
 ```
 
-Wichtige Pfade in der Admin UI:
+Important paths in the admin UI:
 
 ```
 Realm "dbp-realm" → Clients → dbp-frontend
@@ -479,36 +480,36 @@ Realm "dbp-realm" → Clients → dbp-frontend
   → Advanced: PKCE Code Challenge Method = S256
 
 Realm "dbp-realm" → Realm roles
-  → Rollen anlegen / umbenennen
+  → Create / rename roles
 
 Realm "dbp-realm" → Users
-  → Nutzer anlegen, Rollen zuweisen
+  → Create users, assign roles
 ```
 
-### Neuen Nutzer manuell anlegen
+### Manually Creating a New User
 
 1. Admin UI → Users → Add user
-2. Username, Email ausfüllen → Create
-3. Tab „Credentials" → Password setzen, „Temporary" auf OFF
-4. Tab „Role mapping" → Realm role zuweisen
+2. Fill in username, email → Create
+3. Tab "Credentials" → set password, "Temporary" set to OFF
+4. Tab "Role mapping" → assign a realm role
 
-### Redirect-URIs konfigurieren
+### Configuring Redirect URIs
 
-Wenn `INTERNAL_HOST` eine andere IP/Domain ist:
+If `INTERNAL_HOST` is a different IP/domain:
 
 1. Admin UI → Clients → `dbp-frontend` → Settings
-2. „Valid redirect URIs" → URI hinzufügen: `http://<INTERNAL_HOST>:8090/*`
-3. „Web origins" → `http://<INTERNAL_HOST>:8090`
+2. "Valid redirect URIs" → add URI: `http://<INTERNAL_HOST>:8090/*`
+3. "Web origins" → `http://<INTERNAL_HOST>:8090`
 4. Save
 
 ---
 
-## 8. API-Endpunkte
+## 8. API Endpoints
 
 ### `GET /api/auth/config`
 
-Gibt die OIDC-Konfiguration zurück – wird von `auth.js` beim Laden abgerufen.
-Kein Token erforderlich (öffentlich).
+Returns the OIDC configuration – fetched by `auth.js` on load.
+No token required (public).
 
 ```json
 {
@@ -522,12 +523,12 @@ Kein Token erforderlich (öffentlich).
 }
 ```
 
-> `authUrl`, `tokenUrl`, `logoutUrl` verwenden `KEYCLOAK_EXTERNAL_URL`,
-> damit der Browser die Keycloak-Seite erreichen kann.
+> `authUrl`, `tokenUrl`, `logoutUrl` use `KEYCLOAK_EXTERNAL_URL` so the
+> browser can reach the Keycloak page.
 
 ### `GET /api/auth/me`
 
-Gibt Informationen über die aktuelle Sitzung zurück.
+Returns information about the current session.
 
 ```bash
 curl -H "Authorization: Bearer <token>" http://localhost:8090/api/auth/me
@@ -539,19 +540,19 @@ curl -H "Authorization: Bearer <token>" http://localhost:8090/api/auth/me
   "role":     "manufacturer",
   "userInfo": {
     "sub":      "abc123",
-    "name":     "Test Hersteller",
+    "name":     "Test Manufacturer",
     "email":    "hersteller@example.com",
     "username": "hersteller"
   }
 }
 ```
 
-Ohne Token: `{ "loggedIn": false, "role": "public", "userInfo": null }`
+Without a token: `{ "loggedIn": false, "role": "public", "userInfo": null }`
 
 ### `GET /api/auth/policy-matrix`
 
-Gibt die vollständige Zugriffsmatrix zurück – nützlich für Debugging und
-Dokumentation. Kein Token erforderlich.
+Returns the complete access matrix – useful for debugging and
+documentation. No token required.
 
 ```bash
 curl http://localhost:8090/api/auth/policy-matrix
@@ -571,25 +572,25 @@ curl http://localhost:8090/api/auth/policy-matrix
 
 ### `GET /api/passport/:id`
 
-Gibt das nach Rolle gefilterte Passport-Objekt zurück. Ohne Token → `public`.
+Returns the passport object filtered by role. Without a token → `public`.
 
 ```bash
-# Als Hersteller
+# As a manufacturer
 curl -H "Authorization: Bearer <token>" \
   "http://localhost:8090/api/passport/urn%3Auuid%3Aaas-battery-module-001"
 ```
 
-Gesperrte Felder erscheinen als:
+Locked fields appear as:
 
 ```json
 "dueDiligence": {
   "_restricted":    true,
-  "_reason":        "Rolle \"Betreiber\" hat keinen Zugriff.",
-  "_requiredRoles": ["Hersteller", "Behörde"]
+  "_reason":        "Role \"Operator\" has no access.",
+  "_requiredRoles": ["Manufacturer", "Authority"]
 }
 ```
 
-Zusammengefasste Felder (summary):
+Summarized fields (summary):
 
 ```json
 "carbonFootprint": {
@@ -600,12 +601,12 @@ Zusammengefasste Felder (summary):
 }
 ```
 
-Das Antwort-Objekt enthält zusätzlich `_rbac`:
+The response object additionally contains `_rbac`:
 
 ```json
 "_rbac": {
   "role":            "operator",
-  "roleLabel":       "Betreiber",
+  "roleLabel":       "Operator",
   "roleColor":       "#ffd166",
   "roleBorder":      "#4a3f22",
   "roleBg":          "#2e2a1a",
@@ -616,37 +617,37 @@ Das Antwort-Objekt enthält zusätzlich `_rbac`:
 
 ---
 
-## 9. Entwicklungsmodus (ohne Keycloak)
+## 9. Development Mode (without Keycloak)
 
-Für lokale Entwicklung ohne Keycloak-Container:
+For local development without a Keycloak container:
 
 ```bash
-# .env oder docker-compose environment:
+# .env or docker-compose environment:
 RBAC_ENABLED=false
-DEV_ROLE=manufacturer   # Werte: public | manufacturer | operator |
-                        #        recycler | authority |
-                        #        secondLifeOperator | remanufacturer
+DEV_ROLE=manufacturer   # values: public | manufacturer | operator |
+                        #         recycler | authority |
+                        #         secondLifeOperator | remanufacturer
 ```
 
-Im Dev-Modus:
-- Kein Login-Button sichtbar
-- Alle API-Calls werden als `DEV_ROLE` behandelt
+In dev mode:
+- No login button visible
+- All API calls are treated as `DEV_ROLE`
 - `req.userRole = DEV_ROLE`, `req.userInfo = { name: "Dev User (RBAC disabled)" }`
-- `authMiddleware` übergibt direkt an `next()`, kein Token nötig
+- `authMiddleware` passes straight through to `next()`, no token needed
 
 ---
 
-## 10. Neue Rolle hinzufügen
+## 10. Adding a New Role
 
-Beispiel: Rolle `auditor` (externer Prüfer, liest Zertifikate und CO₂).
+Example: role `auditor` (external auditor, reads certificates and CO₂).
 
-### Schritt 1 – `policies.json` erweitern
+### Step 1 – Extend `policies.json`
 
 ```json
 "roles": {
   ...
   "auditor": {
-    "label":  "Externer Prüfer",
+    "label":  "External auditor",
     "color":  "#a78bfa",
     "border": "#5b3fd4",
     "bg":     "#1e1a2e"
@@ -656,13 +657,13 @@ Beispiel: Rolle `auditor` (externer Prüfer, liest Zertifikate und CO₂).
 "rolePriority": [
   "authority",
   "manufacturer",
-  "auditor",           ← Priorität festlegen
+  "auditor",           ← set the priority
   "secondLifeOperator",
   ...
 ],
 ```
 
-Dann in jeder Policy-Phase die neue Rolle eintragen:
+Then add the new role to every policy phase:
 
 ```json
 "policies": {
@@ -681,58 +682,58 @@ Dann in jeder Policy-Phase die neue Rolle eintragen:
     "governance":      { ..., "auditor": null       }
   },
   "secondLife": {
-    // Gleich vorgehen ...
+    // Proceed the same way ...
   }
 }
 ```
 
-### Schritt 2 – Keycloak: Rolle anlegen
+### Step 2 – Keycloak: Create the Role
 
 1. Admin UI → `dbp-realm` → Realm roles → Create role
 2. Name: `auditor` → Save
 
-### Schritt 3 – Keycloak: Nutzer zuweisen
+### Step 3 – Keycloak: Assign to Users
 
-1. Admin UI → Users → Nutzer auswählen
-2. Tab „Role mapping" → `auditor` zuweisen
+1. Admin UI → Users → select a user
+2. Tab "Role mapping" → assign `auditor`
 
-### Schritt 4 – Fertig
+### Step 4 – Done
 
-Kein Code-Change nötig. Die neue Rolle ist sofort wirksam
-(ggf. `RBAC_HOT_RELOAD=true` für sofortige JSON-Übernahme).
+No code changes required. The new role takes effect immediately
+(use `RBAC_HOT_RELOAD=true` for the JSON change to apply instantly).
 
 ---
 
-## 11. Zugriffsrecht ändern
+## 11. Changing an Access Right
 
-### Beispiel 1: Betreiber soll CO₂-Daten vollständig sehen
+### Example 1: Let the operator see full CO₂ data
 
 ```json
 // policies.json → policies → original → carbonFootprint
 "carbonFootprint": {
   "public":       "summary",
   "manufacturer": "full",
-  "operator":     "read",    // ← war null, jetzt "read"
+  "operator":     "read",    // ← was null, now "read"
   "recycler":     null,
   "authority":    "full"
 }
 ```
 
-### Beispiel 2: Due Diligence für Recycler freigeben
+### Example 2: Grant recyclers access to due diligence
 
 ```json
 "dueDiligence": {
   "public":       null,
   "manufacturer": "full",
   "operator":     null,
-  "recycler":     "read",    // ← war null, jetzt "read"
+  "recycler":     "read",    // ← was null, now "read"
   "authority":    "full"
 }
 ```
 
-### Beispiel 3: Neues Submodell-Feld hinzufügen
+### Example 3: Adding a New Submodel Field
 
-Wenn der Adapter ein neues Feld `supplyChain` liefert:
+If the adapter delivers a new field `supplyChain`:
 
 ```json
 "policies": {
@@ -749,11 +750,11 @@ Wenn der Adapter ein neues Feld `supplyChain` liefert:
 }
 ```
 
-Felder die **nicht** in der Policy stehen, werden **unverändert** durchgereicht
-(kein Zugriff-Filter). Das ist das Verhalten von `policies.js`:
+Fields that are **not** listed in the policy are passed through
+**unchanged** (no access filter). This is the behavior of `policies.js`:
 
 ```javascript
-// Felder die nicht in der Policy stehen: 1:1 durchreichen
+// Fields not listed in the policy: pass through 1:1
 for (const key of Object.keys(passport)) {
   if (!(key in result)) result[key] = passport[key];
 }
@@ -761,72 +762,72 @@ for (const key of Object.keys(passport)) {
 
 ---
 
-## 12. Fehlerbehebung
+## 12. Troubleshooting
 
-### "Token expired" – Nutzer muss sich erneut anmelden
+### "Token expired" – user must sign in again
 
-JWT-Token laufen nach der Keycloak-Session-Timeout ab (Standard: 5 Minuten
-Access Token, 30 Minuten Session).
+JWT tokens expire after the Keycloak session timeout (default: 5 minutes
+access token, 30 minutes session).
 
-**Lösung:** Session-Timeout in Keycloak erhöhen:  
+**Solution:** Increase the session timeout in Keycloak:
 Admin UI → Realm Settings → Tokens → Access Token Lifespan
 
-### "No matching key found for kid" – JWKS-Problem
+### "No matching key found for kid" – JWKS issue
 
-Keycloak hat seinen Signing-Key rotiert, der Cache ist veraltet.
+Keycloak has rotated its signing key and the cache is stale.
 
-**Lösung 1:** `JWKS_CACHE_TTL` reduzieren (z. B. `60000` = 1 Minute)  
-**Lösung 2:** Container neu starten (leert den In-Memory-Cache)
+**Solution 1:** Reduce `JWKS_CACHE_TTL` (e.g. `60000` = 1 minute)
+**Solution 2:** Restart the container (clears the in-memory cache)
 
-### "Token audience mismatch" – Warnung im Log
+### "Token audience mismatch" – warning in the log
 
 ```
 [RBAC] Token audience mismatch: account vs dbp-frontend
 ```
 
-Das ist eine Warnung, kein Fehler. Der Token ist trotzdem gültig.  
-**Ursache:** Keycloak sendet manchmal `account` als `aud`-Claim.  
-**Lösung:** In Keycloak → Clients → `dbp-frontend` → Advanced → „Audience"  
-auf `dbp-frontend` setzen (Client Scope `roles` hinzufügen).
+This is a warning, not an error. The token is still valid.
+**Cause:** Keycloak sometimes sends `account` as the `aud` claim.
+**Solution:** In Keycloak → Clients → `dbp-frontend` → Advanced → "Audience"
+set it to `dbp-frontend` (add the `roles` client scope).
 
-### Login-Loop – Browser kommt nicht zurück
+### Login loop – browser doesn't come back
 
-**Ursache:** Redirect-URI ist nicht in Keycloak eingetragen.  
+**Cause:** The redirect URI is not registered in Keycloak.
 
-**Lösung:** Admin UI → Clients → `dbp-frontend` → Settings →  
-„Valid Redirect URIs" → `http://<INTERNAL_HOST>:8090/*` hinzufügen
+**Solution:** Admin UI → Clients → `dbp-frontend` → Settings →
+"Valid Redirect URIs" → add `http://<INTERNAL_HOST>:8090/*`
 
-### "connect ECONNREFUSED keycloak:8080" – Server kann Keycloak nicht erreichen
+### "connect ECONNREFUSED keycloak:8080" – server cannot reach Keycloak
 
-**Ursache:** `KEYCLOAK_URL` ist nicht korrekt oder Keycloak läuft noch nicht.  
-**Lösung:** Warten bis Keycloak healthy ist (healthcheck ~40s Start-Delay).
+**Cause:** `KEYCLOAK_URL` is incorrect, or Keycloak isn't running yet.
+**Solution:** Wait until Keycloak is healthy (healthcheck ~40s startup delay).
 
 ```bash
-# Status prüfen
+# Check status
 docker compose ps keycloak
-# Logs prüfen
+# Check logs
 docker compose logs keycloak | tail -20
 ```
 
-### RBAC greift nicht – alle Felder sind sichtbar
+### RBAC has no effect – all fields are visible
 
-Prüfen ob `RBAC_ENABLED=true` gesetzt ist:
+Check whether `RBAC_ENABLED=true` is set:
 
 ```bash
 curl http://localhost:8090/api/auth/config
-# → "enabled": true  (wenn false: RBAC deaktiviert)
+# → "enabled": true  (if false: RBAC is disabled)
 
 curl -H "Authorization: Bearer <token>" http://localhost:8090/api/auth/me
-# → zeigt erkannte Rolle
+# → shows the detected role
 ```
 
-Adapter-Diagnose für den konkreten Passport:
+Adapter diagnosis for a specific passport:
 
 ```bash
 curl http://localhost:8090/api/debug/urn%3Auuid%3Aaas-battery-module-001
-# → zeigt erkannte Rolle + welche Submodelle gefunden wurden
+# → shows the detected role + which submodels were found
 ```
 
 ---
 
-*Dokumentation – RBAC · DBP Frontend v3 · Masterarbeit Nuraiym Zhusupbekova · Universität Siegen · 2025*
+*Documentation – RBAC · DBP Frontend v3 · Master's thesis by Nuraiym Zhusupbekova · University of Siegen · 2025*

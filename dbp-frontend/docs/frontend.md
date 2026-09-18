@@ -1,68 +1,68 @@
-# DBP Frontend – Entwicklerdokumentation
+# DBP Frontend – Developer Documentation
 
-**Projekt:** Digital Battery Passport Viewer  
-**Masterarbeit:** Modellierung einer optimalen Datenstruktur für industrielle Anwendungen auf Basis eines Digitalen Zwillings  
-**Autorin:** Nuraiym Zhusupbekova, Universität Siegen, 2025  
+**Project:** Digital Battery Passport Viewer
+**Master's thesis:** Modeling an optimal data structure for industrial applications based on a digital twin
+**Author:** Nuraiym Zhusupbekova, University of Siegen, 2025
 **Stack:** Node.js · Express · Vanilla HTML/CSS/JS
 
 ---
 
-## Inhaltsverzeichnis
+## Table of Contents
 
-1. [Projektstruktur](#1-projektstruktur)
-2. [Starten & Konfiguration](#2-starten--konfiguration)
-3. [Design-System: Farben anpassen](#3-design-system-farben-anpassen)
-4. [Typografie anpassen](#4-typografie-anpassen)
-5. [Layout & Komponenten](#5-layout--komponenten)
-6. [Passport-Seite: Inhalte anpassen](#6-passport-seite-inhalte-anpassen)
-7. [Tabs hinzufügen oder umbenennen](#7-tabs-hinzufügen-oder-umbenennen)
-8. [API-Endpunkte](#8-api-endpunkte)
-9. [Adapter-System](#9-adapter-system)
-10. [Einen neuen Adapter schreiben](#10-einen-neuen-adapter-schreiben)
+1. [Project Structure](#1-project-structure)
+2. [Startup & Configuration](#2-startup--configuration)
+3. [Design System: Adjusting Colors](#3-design-system-adjusting-colors)
+4. [Adjusting Typography](#4-adjusting-typography)
+5. [Layout & Components](#5-layout--components)
+6. [Passport Page: Adjusting Content](#6-passport-page-adjusting-content)
+7. [Adding or Renaming Tabs](#7-adding-or-renaming-tabs)
+8. [API Endpoints](#8-api-endpoints)
+9. [Adapter System](#9-adapter-system)
+10. [Writing a New Adapter](#10-writing-a-new-adapter)
 11. [Docker & docker-compose](#11-docker--docker-compose)
 
 ---
 
-## 1. Projektstruktur
+## 1. Project Structure
 
 ```
 dbp-frontend/
 │
-├── server.js                    ← Express-Server, API-Routen
+├── server.js                    ← Express server, API routes
 ├── package.json
 ├── Dockerfile
 │
-├── adapters/                    ← Format-Erkennung & Extraktion
-│   ├── aas-utils.js             ← Shared Hilfsfunktionen (getPropByPath etc.)
-│   ├── adapter-prototype.js     ← Parser für eigenen Prototyp (Masterarbeit)
-│   ├── adapter-idta-02035.js    ← Parser für IDTA-02035 (offizieller Standard)
-│   ├── adapter-generic.js       ← Fallback per Heuristik (immer aktiv)
-│   └── adapter-registry.js      ← Zentrale Dispatcher-Logik
+├── adapters/                    ← Format detection & extraction
+│   ├── aas-utils.js             ← Shared helper functions (getPropByPath etc.)
+│   ├── adapter-prototype.js     ← Parser for the custom prototype (master's thesis)
+│   ├── adapter-idta-02035.js    ← Parser for IDTA-02035 (official standard)
+│   ├── adapter-generic.js       ← Fallback via heuristics (always active)
+│   └── adapter-registry.js      ← Central dispatcher logic
 │
-└── public/                      ← Statische Dateien (direkt an Browser)
-    ├── index.html               ← Startseite / Suchmaske
-    └── passport.html            ← Passport-Detailansicht
+└── public/                      ← Static files (served directly to the browser)
+    ├── index.html               ← Landing page / search form
+    └── passport.html            ← Passport detail view
 ```
 
 ---
 
-## 2. Starten & Konfiguration
+## 2. Startup & Configuration
 
-### Lokal starten
+### Running locally
 
 ```bash
 npm install
 AAS_API=http://localhost:8081 node server.js
 ```
 
-### Umgebungsvariablen
+### Environment Variables
 
-| Variable  | Standard              | Beschreibung                        |
-|-----------|-----------------------|-------------------------------------|
-| `PORT`    | `3000`                | HTTP-Port des Frontends             |
-| `AAS_API` | `http://aas-env:8081` | Basis-URL des BaSyx AAS Environment |
+| Variable  | Default               | Description                          |
+|-----------|-----------------------|---------------------------------------|
+| `PORT`    | `3000`                | HTTP port of the frontend             |
+| `AAS_API` | `http://aas-env:8081` | Base URL of the BaSyx AAS Environment |
 
-### Mit docker-compose
+### With docker-compose
 
 ```yaml
 dbp-frontend:
@@ -77,47 +77,48 @@ dbp-frontend:
 
 ---
 
-## 3. Design-System: Farben anpassen
+## 3. Design System: Adjusting Colors
 
-Alle Farben sind als **CSS Custom Properties (Variablen)** definiert. Sie stehen
-ganz oben im `<style>`-Block von **`public/index.html`** und **`public/passport.html`**.
-Änderungen dort wirken sich auf die gesamte jeweilige Seite aus.
+All colors are defined as **CSS custom properties (variables)**. They sit
+at the very top of the `<style>` block in **`public/index.html`** and
+**`public/passport.html`**. Changes there affect the entire respective page.
 
-### Aktuelle Farbpalette
+### Current Color Palette
 
 ```css
 :root {
-  /* ── Hintergründe ─────────────────────────────────── */
-  --bg:          #0a0f0d;   /* Seiten-Hintergrund (sehr dunkel) */
-  --surface:     #111814;   /* Sekundäre Flächen (Features, Footer) */
-  --card:        #161e1a;   /* Karten-Hintergrund */
-  --card-hover:  #1c2820;   /* Karte beim Hover */
+  /* ── Backgrounds ─────────────────────────────────── */
+  --bg:          #0a0f0d;   /* page background (very dark) */
+  --surface:     #111814;   /* secondary surfaces (features, footer) */
+  --card:        #161e1a;   /* card background */
+  --card-hover:  #1c2820;   /* card on hover */
 
-  /* ── Rahmen / Trennlinien ─────────────────────────── */
-  --border:      #1f2e27;   /* Standard-Border */
-  --border-light:#2a3d32;   /* Hellere Border (Hover-Zustand) */
+  /* ── Borders / dividers ─────────────────────────── */
+  --border:      #1f2e27;   /* standard border */
+  --border-light:#2a3d32;   /* lighter border (hover state) */
 
-  /* ── Akzentfarbe (Grün) ───────────────────────────── */
-  --green:       #3ddc84;   /* Primäre Akzentfarbe */
-  --green-dim:   #2aad63;   /* Abgedunkelte Variante */
-  --green-glow:  #3ddc8418; /* Transparenter Glow (Badges, Focus) */
-  --accent:      #a8ffcc;   /* Heller Akzent (Hover auf Buttons) */
+  /* ── Accent color (green) ───────────────────────── */
+  --green:       #3ddc84;   /* primary accent color */
+  --green-dim:   #2aad63;   /* darkened variant */
+  --green-glow:  #3ddc8418; /* transparent glow (badges, focus) */
+  --accent:      #a8ffcc;   /* light accent (button hover) */
 
-  /* ── Textfarben ───────────────────────────────────── */
-  --text:        #e8f0ec;   /* Primärer Text */
-  --text-muted:  #7a9989;   /* Sekundärer Text (Labels, Beschriftungen) */
-  --text-dim:    #3d5447;   /* Schwach sichtbarer Text (regulatorische Refs) */
+  /* ── Text colors ───────────────────────────────── */
+  --text:        #e8f0ec;   /* primary text */
+  --text-muted:  #7a9989;   /* secondary text (labels, captions) */
+  --text-dim:    #3d5447;   /* low-visibility text (regulatory refs) */
 
-  /* ── Status- / Datenfarben ────────────────────────── */
-  --red:         #ff6b6b;   /* Fehler, "Waste"-Status */
-  --yellow:      #ffd166;   /* Warnungen, CO₂-Klasse, dynamische Daten */
-  --blue:        #74c0fc;   /* IDTA-Adapter-Badge, Ladezyklen */
+  /* ── Status / data colors ────────────────────────── */
+  --red:         #ff6b6b;   /* errors, "Waste" status */
+  --yellow:      #ffd166;   /* warnings, CO₂ class, dynamic data */
+  --blue:        #74c0fc;   /* IDTA adapter badge, charge cycles */
 }
 ```
 
-### Beispiel: Helles Theme
+### Example: Light Theme
 
-Um von dunkel auf hell zu wechseln, folgende Werte in **beiden** HTML-Dateien ersetzen:
+To switch from dark to light, replace the following values in **both** HTML
+files:
 
 ```css
 :root {
@@ -140,16 +141,17 @@ Um von dunkel auf hell zu wechseln, folgende Werte in **beiden** HTML-Dateien er
 }
 ```
 
-> **Hinweis:** Das Hintergrundgitter (`body::before`) verwendet `var(--border)`.
-> Bei hellem Theme wirkt es sehr schwach – ggf. `opacity` anpassen oder entfernen.
+> **Note:** The background grid (`body::before`) uses `var(--border)`.
+> With a light theme it appears very faint – adjust or remove `opacity`
+> if needed.
 
-### Adapter-Badge-Farben
+### Adapter Badge Colors
 
-Die Farben der Adapter-Badges werden **in `passport.html` im JavaScript** gesetzt,
-nicht über CSS-Variablen. Suche nach `adapterColors`:
+The colors of the adapter badges are set **in `passport.html` in the
+JavaScript**, not via CSS variables. Search for `adapterColors`:
 
 ```javascript
-// passport.html, Zeile ~820
+// passport.html, line ~820
 const adapterColors = {
   "idta-02035": { color: "var(--blue)",   border: "#5598cc" },
   "prototype":  { color: "var(--green)",  border: "var(--green-dim)" },
@@ -159,9 +161,9 @@ const adapterColors = {
 
 ---
 
-## 4. Typografie anpassen
+## 4. Adjusting Typography
 
-Das Frontend verwendet drei Google Fonts, eingebunden im `<head>`:
+The frontend uses three Google Fonts, loaded in the `<head>`:
 
 ```html
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1
@@ -169,25 +171,25 @@ Das Frontend verwendet drei Google Fonts, eingebunden im `<head>`:
   &family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 ```
 
-| Verwendung                    | Font              | CSS                                 |
-|-------------------------------|-------------------|-------------------------------------|
-| Überschriften, Zahlen (groß)  | DM Serif Display  | `font-family: 'DM Serif Display'`   |
-| Fließtext, Labels, Buttons    | DM Sans           | `font-family: 'DM Sans'`            |
-| IDs, Code, Monospaceinhalte   | DM Mono           | `font-family: 'DM Mono'`            |
+| Usage                          | Font              | CSS                                 |
+|---------------------------------|-------------------|--------------------------------------|
+| Headings, large numbers         | DM Serif Display  | `font-family: 'DM Serif Display'`   |
+| Body text, labels, buttons      | DM Sans           | `font-family: 'DM Sans'`            |
+| IDs, code, monospace content    | DM Mono           | `font-family: 'DM Mono'`            |
 
-### Andere Fonts einbinden
+### Using Different Fonts
 
-Ersetze den Google Fonts `<link>` und passe die `font-family`-Deklarationen im
-CSS an. Alternativen mit ähnlichem Charakter:
+Replace the Google Fonts `<link>` and adjust the `font-family` declarations
+in the CSS. Alternatives with a similar character:
 
 ```html
-<!-- Modern Sans-Serif Alternative -->
+<!-- Modern sans-serif alternative -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600
   &family=JetBrains+Mono:wght@400;500
   &family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
 ```
 
-Dann im CSS:
+Then in the CSS:
 ```css
 body                  { font-family: 'Inter', sans-serif; }
 h1, .section-title    { font-family: 'Playfair Display', serif; }
@@ -195,218 +197,219 @@ h1, .section-title    { font-family: 'Playfair Display', serif; }
 .passport-id, code    { font-family: 'JetBrains Mono', monospace; }
 ```
 
-### Schriftgrößen
+### Font Sizes
 
-Wichtige Größen in `passport.html`:
+Important sizes in `passport.html`:
 
-| Element                     | CSS-Klasse / Selektor        | Standard   |
-|-----------------------------|------------------------------|------------|
-| Passport-Titel (Überschrift)| `.passport-title`            | clamp(1.6rem, 3vw, 2.4rem) |
-| Große Kennzahlen (SoH etc.) | `.card-value.big`            | `2rem`     |
-| Tab-Labels                  | `.tab-btn`                   | `0.82rem`  |
-| Daten-Keys (linke Spalte)   | `.data-key`                  | `0.72rem`  |
-| Regulatorische Referenzen   | `.card-reg`                  | `0.6rem`   |
+| Element                        | CSS class / selector          | Default    |
+|---------------------------------|-------------------------------|------------|
+| Passport title (heading)        | `.passport-title`            | clamp(1.6rem, 3vw, 2.4rem) |
+| Large key figures (SoH etc.)    | `.card-value.big`            | `2rem`     |
+| Tab labels                      | `.tab-btn`                   | `0.82rem`  |
+| Data keys (left column)         | `.data-key`                  | `0.72rem`  |
+| Regulatory references           | `.card-reg`                  | `0.6rem`   |
 
 ---
 
-## 5. Layout & Komponenten
+## 5. Layout & Components
 
-### Seitenbreite
+### Page Width
 
-Die maximale Breite der Passport-Seite ist in `.page-wrapper` definiert:
+The maximum width of the passport page is defined in `.page-wrapper`:
 
 ```css
 .page-wrapper {
-  max-width: 1200px;   /* ← hier anpassen */
+  max-width: 1200px;   /* ← adjust here */
   margin: 0 auto;
   padding: 0 40px 80px;
 }
 ```
 
-### Grid-Layouts
+### Grid Layouts
 
-Es gibt drei vordefinierte Grid-Klassen für die Kachelansichten:
+There are three predefined grid classes for the tile views:
 
-| Klasse     | Spalten              | Verwendet in                    |
-|------------|----------------------|---------------------------------|
-| `.grid-2`  | `1fr 1fr`            | Hersteller + Owner, CO₂-Karten  |
-| `.grid-3`  | `repeat(3, 1fr)`     | SoH + Zyklen + Kapazität        |
-| `.grid-4`  | `repeat(4, 1fr)`     | Übersichts-KPIs oben            |
+| Class      | Columns              | Used in                          |
+|------------|----------------------|-----------------------------------|
+| `.grid-2`  | `1fr 1fr`            | Manufacturer + owner, CO₂ cards  |
+| `.grid-3`  | `repeat(3, 1fr)`     | SoH + cycles + capacity          |
+| `.grid-4`  | `repeat(4, 1fr)`     | Overview KPIs at the top         |
 
-Responsive Breakpoints: unter 900px wird `.grid-4` zu 2 Spalten, unter 700px
-werden alle Grids zu 1 Spalte.
+Responsive breakpoints: below 900px `.grid-4` becomes 2 columns, below
+700px all grids become 1 column.
 
-### Karten (`.card`)
+### Cards (`.card`)
 
 ```css
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;      /* ← Eckenradius */
-  padding: 20px 22px;       /* ← Innenabstand */
+  border-radius: 12px;      /* ← corner radius */
+  padding: 20px 22px;       /* ← inner padding */
 }
 ```
 
-### Datenlisten (`.data-list` / `.data-row`)
+### Data Lists (`.data-list` / `.data-row`)
 
-Schlüssel-Wert-Zeilen (z. B. Herstellerliste). Die Breite der Schlüsselspalte:
+Key-value rows (e.g., the manufacturer list). Width of the key column:
 
 ```css
 .data-key {
-  flex: 0 0 220px;    /* ← Breite der linken Label-Spalte */
+  flex: 0 0 220px;    /* ← width of the left label column */
   font-family: 'DM Mono', monospace;
   font-size: 0.72rem;
   color: var(--text-muted);
 }
 ```
 
-### Hintergrundgitter
+### Background Grid
 
-Das Gitternetz ist ein CSS `::before`-Pseudo-Element auf `body`:
+The grid pattern is a CSS `::before` pseudo-element on `body`:
 
 ```css
 body::before {
-  background-size: 48px 48px;   /* ← Gittergröße */
-  opacity: 0.2;                 /* ← Sichtbarkeit (0 = unsichtbar) */
+  background-size: 48px 48px;   /* ← grid size */
+  opacity: 0.2;                 /* ← visibility (0 = invisible) */
 }
 ```
 
-Gitter komplett entfernen: `body::before { display: none; }`
+To remove the grid entirely: `body::before { display: none; }`
 
 ---
 
-## 6. Passport-Seite: Inhalte anpassen
+## 6. Passport Page: Adjusting Content
 
-### Welche Element-IDs gibt es?
+### What Element IDs Exist?
 
-Alle Inhalte werden per JavaScript in HTML-Elemente mit festen `id`-Attributen geschrieben.
+All content is written into HTML elements with fixed `id` attributes via
+JavaScript.
 
-**Hero-Bereich (Kopfzeile der Passport-Seite):**
+**Hero section (header of the passport page):**
 
-| ID                  | Inhalt                                      |
-|---------------------|---------------------------------------------|
-| `passportCategory`  | Kategorie-Label (z. B. „Industriebatterie") |
-| `passportTitle`     | Haupttitel (idShort der AAS)                |
-| `passportId`        | AAS-ID (monospaced)                         |
-| `statusChip`        | Lifecycle-Status-Badge                      |
-| `metaManufacturer`  | Herstellername in der Meta-Zeile            |
-| `metaDate`          | Herstelldatum                               |
-| `metaModel`         | Modell-ID                                   |
-| `metaChemistry`     | Chemie (z. B. „NMC")                        |
-| `metaEnergy`        | Nennenergie in kWh                          |
+| ID                  | Content                                       |
+|---------------------|------------------------------------------------|
+| `passportCategory`  | Category label (e.g., "Industrial battery")    |
+| `passportTitle`     | Main title (idShort of the AAS)                |
+| `passportId`        | AAS ID (monospaced)                            |
+| `statusChip`        | Lifecycle status badge                          |
+| `metaManufacturer`  | Manufacturer name in the meta row               |
+| `metaDate`          | Manufacturing date                              |
+| `metaModel`         | Model ID                                        |
+| `metaChemistry`     | Chemistry (e.g., "NMC")                         |
+| `metaEnergy`        | Rated energy in kWh                             |
 
-**Übersichts-Tab KPI-Karten:**
+**Overview tab KPI cards:**
 
-| ID               | Inhalt                        |
-|------------------|-------------------------------|
-| `ov-soh`         | State of Health (groß)        |
-| `ov-soh-sub`     | Datum letzte Messung          |
-| `ov-co2`         | CO₂-Gesamtwert                |
-| `ov-co2-class`   | CO₂-Leistungsklasse           |
-| `ov-cycles`      | Aktuelle Ladezyklen           |
-| `ov-cycles-max`  | Max. Ladezyklen (Design)      |
-| `ov-recycling`   | Recyclingeffizienz            |
+| ID               | Content                        |
+|------------------|----------------------------------|
+| `ov-soh`         | State of health (large)          |
+| `ov-soh-sub`     | Date of last measurement         |
+| `ov-co2`         | Total CO₂ value                  |
+| `ov-co2-class`   | CO₂ performance class            |
+| `ov-cycles`      | Current charge cycles            |
+| `ov-cycles-max`  | Max. charge cycles (design)      |
+| `ov-recycling`   | Recycling efficiency             |
 
-**Listen (werden per `innerHTML` befüllt):**
+**Lists (populated via `innerHTML`):**
 
-| ID                   | Tab            | Inhalt                             |
-|----------------------|----------------|------------------------------------|
-| `manufacturerList`   | Übersicht      | Hersteller-Datenzeilen             |
-| `ownerList`          | Übersicht      | Verantwortlicher Beteiligter       |
-| `govStrip`           | Übersicht      | Governance-Metadaten               |
-| `technicalList`      | Technisch      | Technische Spezifikation           |
-| `identifiersList`    | Technisch      | Digitale Identifikatoren           |
-| `co2Phases`          | CO₂            | Lebenszyklusphasen-Balken          |
-| `co2StudyList`       | CO₂            | LCA-Studie Angaben                 |
-| `recycledGrid`       | Materialien    | Rezyklatanteile (Pills)            |
-| `activeMaterialsList`| Materialien    | Kathode / Anode / Elektrolyt       |
-| `originList`         | Materialien    | Rohstoffherkunft                   |
-| `tempList`           | Performance    | Temperaturhistorie                 |
-| `designList`         | Performance    | Auslegungsparameter                |
-| `lcStatusList`       | Lebenszyklus   | Lifecycle-Status                   |
-| `dismantlingList`    | Lebenszyklus   | Demontage & Recycling              |
-| `wasteList`          | Lebenszyklus   | Abfallbehandlung                   |
-| `certList`           | Zertifikate    | Zertifikatskacheln                 |
-| `rawJson`            | Rohdaten       | Aufgeklapptes JSON                 |
+| ID                   | Tab              | Content                             |
+|----------------------|------------------|--------------------------------------|
+| `manufacturerList`   | Overview         | Manufacturer data rows               |
+| `ownerList`          | Overview         | Responsible party                    |
+| `govStrip`           | Overview         | Governance metadata                  |
+| `technicalList`      | Technical        | Technical specification              |
+| `identifiersList`    | Technical        | Digital identifiers                  |
+| `co2Phases`          | CO₂              | Lifecycle phase bars                 |
+| `co2StudyList`       | CO₂              | LCA study details                    |
+| `recycledGrid`       | Materials        | Recycled content shares (pills)      |
+| `activeMaterialsList`| Materials        | Cathode / anode / electrolyte        |
+| `originList`         | Materials        | Raw material origin                  |
+| `tempList`           | Performance      | Temperature history                  |
+| `designList`         | Performance      | Design parameters                    |
+| `lcStatusList`       | Lifecycle        | Lifecycle status                     |
+| `dismantlingList`    | Lifecycle        | Disassembly & recycling              |
+| `wasteList`          | Lifecycle        | Waste treatment                      |
+| `certList`           | Certificates     | Certificate tiles                    |
+| `rawJson`            | Raw data         | Expanded JSON                        |
 
-### Eine neue Zeile in einer Datenliste hinzufügen
+### Adding a New Row to a Data List
 
-Datenlisten werden mit der Hilfsfunktion `dataRow(key, value, badge)` aufgebaut.
-Badge kann `'static'`, `'dynamic'` oder `null` sein.
+Data lists are built with the `dataRow(key, value, badge)` helper function.
+`badge` can be `'static'`, `'dynamic'`, or `null`.
 
-Beispiel – neue Zeile in der Herstellerliste ergänzen (in `passport.html`, in der
-`render()`-Funktion, Abschnitt `// ── OVERVIEW ──`):
+Example – add a new row to the manufacturer list (in `passport.html`, in
+the `render()` function, section `// ── OVERVIEW ──`):
 
 ```javascript
 setHtml('manufacturerList',
-  dataRow('Hersteller',   m.name,    'static')  +
-  dataRow('Adresse',      m.address, 'static')  +
-  // ← neue Zeile:
+  dataRow('Manufacturer', m.name,    'static')  +
+  dataRow('Address',      m.address, 'static')  +
+  // ← new row:
   dataRow('GLN',          m.gln,     'static')  +
-  dataRow('Kontakt',      m.contact, 'static')
+  dataRow('Contact',      m.contact, 'static')
 );
 ```
 
-Der zugehörige Wert muss im Adapter als `manufacturer.gln` bereitgestellt werden
-(siehe [Kapitel 9](#9-adapter-system)).
+The corresponding value must be provided as `manufacturer.gln` in the
+adapter (see [chapter 9](#9-adapter-system)).
 
 ---
 
-## 7. Tabs hinzufügen oder umbenennen
+## 7. Adding or Renaming Tabs
 
-### Tab umbenennen
+### Renaming a Tab
 
-In `passport.html`, im HTML-Teil:
+In `passport.html`, in the HTML section:
 
 ```html
-<!-- vorher -->
-<button class="tab-btn" data-tab="certification">Zertifikate</button>
+<!-- before -->
+<button class="tab-btn" data-tab="certification">Certificates</button>
 
-<!-- nachher -->
-<button class="tab-btn" data-tab="certification">Konformität & Zertifikate</button>
+<!-- after -->
+<button class="tab-btn" data-tab="certification">Compliance & Certificates</button>
 ```
 
-Das Tab-Panel selbst (`id="tab-certification"`) bleibt unverändert.
+The tab panel itself (`id="tab-certification"`) remains unchanged.
 
-### Neuen Tab hinzufügen
+### Adding a New Tab
 
-**Schritt 1:** Button in der Tab-Leiste einfügen:
+**Step 1:** Insert a button in the tab bar:
 
 ```html
 <button class="tab-btn" data-tab="duediligence">Due Diligence</button>
 ```
 
-**Schritt 2:** Tab-Panel-Div nach den anderen `tab-section`-Divs einfügen:
+**Step 2:** Insert the tab panel div after the other `tab-section` divs:
 
 ```html
 <div class="tab-section" id="tab-duediligence">
   <div class="section-header">
     <div class="section-icon">🔍</div>
-    <div class="section-title">Sorgfaltspflichten (Due Diligence)</div>
+    <div class="section-title">Due Diligence</div>
     <div class="section-reg">Art. 39 ff.</div>
   </div>
   <div class="data-list" id="dueDiligenceList"></div>
 </div>
 ```
 
-**Schritt 3:** In der `render()`-Funktion befüllen:
+**Step 3:** Populate it in the `render()` function:
 
 ```javascript
-// Zugriff auf Due-Diligence-Daten (müssen im Adapter vorhanden sein)
+// Access to due diligence data (must be present in the adapter)
 const dd = p.dueDiligence || {};
 
 setHtml('dueDiligenceList',
-  dataRow('Richtlinie',     dd.policyRef,    'static') +
-  dataRow('OECD-Standard',  dd.standard,     'static') +
-  dataRow('Risikolevel',    dd.riskLevel,     'dynamic') +
-  dataRow('Prüfung (Kobalt)', dd.cobaltAudit, 'static')
+  dataRow('Policy',            dd.policyRef,   'static') +
+  dataRow('OECD standard',     dd.standard,    'static') +
+  dataRow('Risk level',        dd.riskLevel,   'dynamic') +
+  dataRow('Audit (cobalt)',    dd.cobaltAudit, 'static')
 );
 ```
 
-**Schritt 4:** Die Tab-Aktivierung läuft automatisch über den Event-Listener:
+**Step 4:** Tab activation happens automatically via the event listener:
 
 ```javascript
-// Dieser Code in passport.html muss NICHT verändert werden
+// This code in passport.html does NOT need to be changed
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => { /* ... */ });
 });
@@ -414,18 +417,18 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 ---
 
-## 8. API-Endpunkte
+## 8. API Endpoints
 
 ### `GET /api/passport/:id`
 
-Gibt ein normalisiertes Passport-Objekt zurück. Die `id` muss URL-enkodiert sein.
+Returns a normalized passport object. The `id` must be URL-encoded.
 
-**Beispiel:**
+**Example:**
 ```bash
 curl "http://localhost:3000/api/passport/urn%3Auuid%3Aaas-battery-module-001"
 ```
 
-**Antwort-Struktur:**
+**Response structure:**
 
 ```jsonc
 {
@@ -434,7 +437,7 @@ curl "http://localhost:3000/api/passport/urn%3Auuid%3Aaas-battery-module-001"
   "assetKind": "Instance",
   "globalAssetId": "urn:ejot:battery:module:BAT-EJOT-2025-00001",
 
-  // ── Normalisierte Felder (immer gleiche Struktur) ──
+  // ── Normalized fields (always the same structure) ──
   "identification": { "batteryId": "...", "modelId": "...", ... },
   "manufacturer":   { "name": "...", "address": "...", ... },
   "technical":      { "voltage": "48.0", "capacity": "100.0", ... },
@@ -447,19 +450,19 @@ curl "http://localhost:3000/api/passport/urn%3Auuid%3Aaas-battery-module-001"
   "certification":  { "ceRef": "https://...", ... },
   "governance":     { "version": "1.0.0", "quality": "Validated", ... },
 
-  // ── Adapter-Metadaten ──
+  // ── Adapter metadata ──
   "_adapterName":  "prototype",           // "idta-02035" | "prototype" | "generic"
-  "_adapterLabel": "Prototyp (Masterarbeit)",
-  "_unmatchedSubmodels": [],              // Submodelle ohne Treffer
+  "_adapterLabel": "Prototype (master's thesis)",
+  "_unmatchedSubmodels": [],              // submodels without a match
 
-  // ── Rohdaten für den Raw-Tab ──
+  // ── Raw data for the raw tab ──
   "_raw": { "shell": { ... }, "submodels": { ... } }
 }
 ```
 
 ### `GET /api/debug/:id`
 
-Gibt eine vollständige Adapter-Diagnose zurück. Nützlich für die Fehlersuche.
+Returns a complete adapter diagnosis. Useful for troubleshooting.
 
 ```bash
 curl "http://localhost:3000/api/debug/urn%3Auuid%3Aaas-battery-module-001"
@@ -468,7 +471,7 @@ curl "http://localhost:3000/api/debug/urn%3Auuid%3Aaas-battery-module-001"
 ```jsonc
 {
   "shellId": "urn:uuid:aas-battery-module-001",
-  "selectedAdapter": { "name": "prototype", "label": "Prototyp (Masterarbeit)" },
+  "selectedAdapter": { "name": "prototype", "label": "Prototype (master's thesis)" },
   "submodelDiagnostics": [
     {
       "idShort": "GeneralProductInformation",
@@ -478,7 +481,7 @@ curl "http://localhost:3000/api/debug/urn%3Auuid%3Aaas-battery-module-001"
         { "adapter": "generic",    "role": "generic" }
       ]
     }
-    // ... ein Eintrag pro Submodell
+    // ... one entry per submodel
   ],
   "roleMap": {
     "gpi":    { "idShort": "GeneralProductInformation", "id": "urn:dbp:submodel:..." },
@@ -490,76 +493,76 @@ curl "http://localhost:3000/api/debug/urn%3Auuid%3Aaas-battery-module-001"
 
 ---
 
-## 9. Adapter-System
+## 9. Adapter System
 
-### Konzept
+### Concept
 
-Jeder eingehende API-Aufruf durchläuft die **Adapter-Registry** (`adapter-registry.js`).
-Diese bewertet alle geladenen Submodelle mit jedem registrierten Adapter und wählt
-den mit den meisten Treffern.
+Every incoming API call passes through the **adapter registry**
+(`adapter-registry.js`). It evaluates all loaded submodels against every
+registered adapter and selects the one with the most matches.
 
 ```
-Eingehende Submodelle
+Incoming submodels
         │
         ▼
 ┌─────────────────────────────────────────┐
-│ Adapter-Registry                        │
+│ Adapter Registry                        │
 │                                         │
-│  idta-02035.detect(sm) → score = 4      │  ← gewinnt
+│  idta-02035.detect(sm) → score = 4      │  ← wins
 │  prototype.detect(sm)  → score = 2      │
 │  generic.detect(sm)    → score = 1      │
 └───────────────┬─────────────────────────┘
                 │ extract(roleMap)
                 ▼
-        Normalisiertes Passport-Objekt
+        Normalized passport object
 ```
 
-### Adapter-Schnittstelle
+### Adapter Interface
 
-Jeder Adapter muss drei Funktionen exportieren:
+Every adapter must export three functions:
 
 ```javascript
-// Erkennt, ob dieses Submodell zum Adapter gehört
+// Detects whether this submodel belongs to the adapter
 function detect(submodel) → boolean
 
-// Gibt die interne Rolle zurück (z. B. "gpi", "nameplate")
+// Returns the internal role (e.g., "gpi", "nameplate")
 function role(submodel) → string | null
 
-// Extrahiert das normalisierte Passport-Objekt aus der roleMap
+// Extracts the normalized passport object from the roleMap
 function extract(submodelsByRole) → PassportObject
 ```
 
-### Verfügbare Hilfsfunktionen (`aas-utils.js`)
+### Available Helper Functions (`aas-utils.js`)
 
-| Funktion                                  | Beschreibung                                             |
-|-------------------------------------------|----------------------------------------------------------|
-| `getPropByPath(elements, "A.B.C")`        | Navigiert per `idShort`-Pfad (Prototyp-Adapter)          |
-| `getPropBySemanticId(elements, iri)`      | Sucht rekursiv nach `semanticId` (IDTA-Adapter)          |
-| `getCollection(elements, idShort)`        | Gibt `value[]` einer Collection zurück                   |
-| `getCollectionBySemanticId(elements, iri)`| Gibt `value[]` per semanticId                            |
-| `flatElements(elements, prefix)`          | Flacht alle Leaf-Properties in eine Liste ab             |
-| `getSubmodelSemanticId(submodel)`         | Liest die semanticId eines Submodells selbst aus         |
-| `extractSemanticIdValue(semanticId)`      | Extrahiert den String-Wert aus einem semanticId-Objekt   |
-| `normalizeId(id)`                         | Normalisiert IRIs für Vergleiche (lowercase, kein Slash) |
+| Function                                  | Description                                                |
+|--------------------------------------------|-------------------------------------------------------------|
+| `getPropByPath(elements, "A.B.C")`        | Navigates via an `idShort` path (prototype adapter)          |
+| `getPropBySemanticId(elements, iri)`      | Recursively searches for `semanticId` (IDTA adapter)         |
+| `getCollection(elements, idShort)`        | Returns the `value[]` of a collection                        |
+| `getCollectionBySemanticId(elements, iri)`| Returns `value[]` by semanticId                               |
+| `flatElements(elements, prefix)`          | Flattens all leaf properties into a list                     |
+| `getSubmodelSemanticId(submodel)`         | Reads the semanticId of a submodel itself                     |
+| `extractSemanticIdValue(semanticId)`      | Extracts the string value from a semanticId object            |
+| `normalizeId(id)`                         | Normalizes IRIs for comparisons (lowercase, no trailing slash)|
 
 ---
 
-## 10. Einen neuen Adapter schreiben
+## 10. Writing a New Adapter
 
-Beispiel: Ein Adapter für das **Catena-X Battery Pass**-Format.
+Example: an adapter for the **Catena-X Battery Pass** format.
 
-**Schritt 1:** Neue Datei `adapters/adapter-catena-x.js` anlegen:
+**Step 1:** Create a new file `adapters/adapter-catena-x.js`:
 
 ```javascript
 const { getPropByPath, getPropBySemanticId, getSubmodelSemanticId } = require("./aas-utils");
 
-// Bekannte idShort-Namen im Catena-X-Ökosystem
+// Known idShort names in the Catena-X ecosystem
 const IDSHORT_MAP = {
   "BatteryPass":      "main",
   "CX_BatteryPass":   "main",
 };
 
-// Bekannte semanticId-Fragmente
+// Known semanticId fragments
 const SEMID_PATTERN = /catena-x\.net|catenax/i;
 
 function detect(submodel) {
@@ -582,12 +585,12 @@ function extract(submodelsByRole) {
     identification: {
       batteryId: getPropByPath(m, "LocalIdentifiers.SerialNumber"),
       modelId:   getPropByPath(m, "LocalIdentifiers.PartInstanceId"),
-      // ... weitere Felder
+      // ... additional fields
     },
     manufacturer: {
       name: getPropByPath(m, "Manufacturer.ManufacturerName"),
     },
-    // ... alle weiteren Felder mit null befüllen wenn nicht vorhanden
+    // ... fill in all remaining fields with null if not present
     technical: { voltage: null, capacity: null, energy: null,
                  chemistry: null, cellType: null, cells: null,
                  weight: null, protection: null },
@@ -613,27 +616,27 @@ function extract(submodelsByRole) {
 module.exports = { detect, role, extract };
 ```
 
-**Schritt 2:** In `adapter-registry.js` registrieren:
+**Step 2:** Register it in `adapter-registry.js`:
 
 ```javascript
-// Oben bei den require()-Aufrufen
+// Near the top, with the require() calls
 const adapterCatenaX = require("./adapter-catena-x");
 
-// In der ADAPTERS-Liste – VOR dem generic-Eintrag einfügen:
+// In the ADAPTERS list – insert BEFORE the generic entry:
 const ADAPTERS = [
-  { name: "idta-02035",  label: "IDTA-02035 (offiziell)", adapter: adapterIdta },
-  { name: "catena-x",    label: "Catena-X",               adapter: adapterCatenaX }, // ← neu
-  { name: "prototype",   label: "Prototyp (Masterarbeit)", adapter: adapterProto },
-  { name: "generic",     label: "Generisch (Fallback)",    adapter: adapterGeneric },
+  { name: "idta-02035",  label: "IDTA-02035 (official)",      adapter: adapterIdta },
+  { name: "catena-x",    label: "Catena-X",                   adapter: adapterCatenaX }, // ← new
+  { name: "prototype",   label: "Prototype (master's thesis)", adapter: adapterProto },
+  { name: "generic",     label: "Generic (fallback)",          adapter: adapterGeneric },
 ];
 ```
 
-**Schritt 3:** Badge-Farbe in `passport.html` ergänzen:
+**Step 3:** Add the badge color in `passport.html`:
 
 ```javascript
 const adapterColors = {
   "idta-02035": { color: "var(--blue)",   border: "#5598cc" },
-  "catena-x":   { color: "#ff9f43",       border: "#cc7a00" }, // ← orange für Catena-X
+  "catena-x":   { color: "#ff9f43",       border: "#cc7a00" }, // ← orange for Catena-X
   "prototype":  { color: "var(--green)",  border: "var(--green-dim)" },
   "generic":    { color: "var(--yellow)", border: "#cc9900" },
 };
@@ -655,7 +658,7 @@ EXPOSE 3000
 CMD ["node", "server.js"]
 ```
 
-### Vollständige docker-compose.yml (Referenz)
+### Complete docker-compose.yml (Reference)
 
 ```yaml
 version: "3.8"
@@ -698,25 +701,25 @@ services:
       - aas-env
 ```
 
-### Submodelle beim Start registrieren
+### Registering Submodels at Startup
 
-Über das mitgelieferte `add_submodels.sh`-Script oder manuell:
+Via the included `add_submodels.sh` script, or manually:
 
 ```bash
-# AAS-Instanz hochladen
+# Upload the AAS instance
 curl -X POST http://localhost:8081/shells \
   -H "Content-Type: application/json" \
   -d @aas_instances/battery_module_001.json
 
-# Submodell registrieren
+# Register a submodel
 curl -X POST http://localhost:8081/submodels \
   -H "Content-Type: application/json" \
   -d @submodel_instances/sm_general_product_information_battery_001.json
 
-# Im Frontend aufrufen:
+# Open in the frontend:
 # http://localhost:3000/passport/urn%3Auuid%3Aaas-battery-module-001
 ```
 
 ---
 
-*Dokumentation – DBP Frontend v2.0 · Masterarbeit Nuraiym Zhusupbekova · Universität Siegen · 2025*
+*Documentation – DBP Frontend v2.0 · Master's thesis by Nuraiym Zhusupbekova · University of Siegen · 2025*

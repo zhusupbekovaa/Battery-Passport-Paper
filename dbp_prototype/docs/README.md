@@ -1,27 +1,27 @@
-# DBP Prototype – Dokumentation
-**Projekt:** Digital Battery Pass (DBP) – Prototypische Implementierung  
+# DBP Prototype – Documentation
+**Project:** Digital Battery Pass (DBP) – Prototype Implementation
 
 
-## 1. Überblick
+## 1. Overview
 
-Dieser Prototyp implementiert den **Digital Battery Pass (DBP)** für ein industrielles Lithium-Ionen-Batteriemodul (48V / 100Ah) auf Basis der **Asset Administration Shell (AAS)** gemäß IEC 63278-1. Die Implementierung nutzt **Eclipse BaSyx** als AAS-Laufzeitumgebung.
+This prototype implements the **Digital Battery Pass (DBP)** for an industrial Lithium-Ion battery module (48V / 100Ah) based on the **Asset Administration Shell (AAS)** according to IEC 63278-1. The implementation uses **Eclipse BaSyx** as the AAS runtime environment.
 
-### Regulatorische Grundlage
-Die EU-Batterieverordnung 2023/1542 verpflichtet ab 2027 bestimmte Batterieklassen zur Bereitstellung eines DBP. Für Industriebatterien über 2 kWh (vorliegendes Modul: 4,8 kWh) gilt die vollständige Informationspflicht gemäß Art. 77 und Anhang XIII.
+### Regulatory Basis
+The EU Battery Regulation 2023/1542 requires certain battery classes to provide a DBP starting in 2027. For industrial batteries above 2 kWh (this module: 4.8 kWh), the full information obligation under Art. 77 and Annex XIII applies.
 
 ---
 
-## 2. Architektur und Dateistruktur
+## 2. Architecture and File Structure
 
 ```
 DBP Prototype/
 ├── aas_instances/
-│   └── battery_module_001.json          ← AAS-Instanz (Instanzebene)
+│   └── battery_module_001.json          ← AAS instance (instance level)
 ├── aas_model/
-│   └── battery_model_001.json           ← AAS-Modell (Typebene)
+│   └── battery_model_001.json           ← AAS model (type level)
 ├── submodel_instances/
-│   ├── sm_general_product_information_battery_001.json           ← GPI Variante A (Dummy-Daten)
-│   ├── sm_general_product_information_battery_001_refVariant.json ← GPI Variante B (Referenzen)
+│   ├── sm_general_product_information_battery_001.json           ← GPI variant A (dummy data)
+│   ├── sm_general_product_information_battery_001_refVariant.json ← GPI variant B (references)
 │   ├── sm_carbon_footprint_battery_001.json
 │   ├── sm_circularity_battery_001.json
 │   ├── sm_due_diligence_battery_001.json
@@ -30,7 +30,7 @@ DBP Prototype/
 │   ├── sm_ownership_responsibility_battery_001.json
 │   └── sm_performance_durability_battery_001.json
 ├── submodel_definitions/
-│   ├── general_product_information_structure.md    ← GPI-Dokumentation (vollständig)
+│   ├── general_product_information_structure.md    ← GPI documentation (complete)
 │   ├── carbon_footprint_structure.md
 │   ├── circularity_structure.md
 │   ├── due_diligence_structure.md
@@ -39,27 +39,27 @@ DBP Prototype/
 │   ├── ownership_responsibility_structure.md
 │   └── performance_durability_structure.md
 ├── docs/
-│   └── README.md                        ← Diese Datei
-└── add_submodels.sh                     ← BaSyx Registrierungsscript
+│   └── README.md                        ← This file
+└── add_submodels.sh                     ← BaSyx registration script
 ```
 
 ---
 
-## 3. Typ- und Instanzebene (Kernprinzip)
+## 3. Type and Instance Level (Core Principle)
 
-Das Referenzmodell unterscheidet explizit zwischen zwei Datenebenen:
+The reference model explicitly distinguishes between two data levels:
 
-### Typebene (battery_model_001.json)
-- Repräsentiert das **Batteriemodell** als generischen Typ
+### Type Level (battery_model_001.json)
+- Represents the **battery model** as a generic type
 - `assetKind: "Type"`
-- Enthält: CO₂-Fußabdruck, Materialzusammensetzung, Performance-Parameter, Technische Spezifikation
-- **Gilt für alle Instanzen dieses Modells**
+- Contains: CO₂ footprint, material composition, performance parameters, technical specification
+- **Applies to all instances of this model**
 
-### Instanzebene (battery_module_001.json)
-- Repräsentiert eine **konkrete physische Batterieeinheit** (Seriennummer BAT-EJOT-2025-00001)
+### Instance Level (battery_module_001.json)
+- Represents a **specific physical battery unit** (serial number BAT-EJOT-2025-00001)
 - `assetKind: "Instance"`
-- Enthält: Eigentumsdaten, Lifecycle-Status, Zertifikate, Kreislaufwirtschaftsdaten
-- **`derivedFrom`-Referenz verknüpft Instanz mit Modelltyp**
+- Contains: ownership data, lifecycle status, certificates, circular economy data
+- **`derivedFrom` reference links the instance to the model type**
 
 ```
 battery_model_001 (Type)
@@ -71,158 +71,158 @@ battery_module_001 (Instance)
 
 ---
 
-## 4. Submodelle und Verantwortlichkeiten
+## 4. Submodels and Responsibilities
 
-| Submodell | Ebene | Verpflichtung | Primäre Akteure | Datenart |
+| Submodel | Level | Obligation | Primary Actors | Data Type |
 |---|---|---|---|---|
-| General Product Information | Typ + Instanz | PFLICHT | Hersteller | statisch + dynamisch |
-| Carbon Footprint | Typ | PFLICHT | Hersteller, Behörden | statisch |
-| Material Composition | Typ | PFLICHT (teilweise) | Hersteller, Recycler | statisch |
-| Performance & Durability | Typ + Instanz | PFLICHT | Hersteller, Betreiber | statisch + dynamisch |
-| Lifecycle & Circularity | Instanz | PFLICHT | Alle | dynamisch |
-| Labels & Certification | Typ | PFLICHT (kategoriespezifisch) | Hersteller, Behörden | statisch |
-| Due Diligence | Instanz | PFLICHT (akteurspezifisch) | Behörden | statisch |
-| Ownership & Responsibility | Instanz | PFLICHT (ereignisbasiert) | Alle | dynamisch |
+| General Product Information | Type + Instance | MANDATORY | Manufacturer | static + dynamic |
+| Carbon Footprint | Type | MANDATORY | Manufacturer, authorities | static |
+| Material Composition | Type | MANDATORY (partially) | Manufacturer, recycler | static |
+| Performance & Durability | Type + Instance | MANDATORY | Manufacturer, operator | static + dynamic |
+| Lifecycle & Circularity | Instance | MANDATORY | All | dynamic |
+| Labels & Certification | Type | MANDATORY (category-specific) | Manufacturer, authorities | static |
+| Due Diligence | Instance | MANDATORY (actor-specific) | Authorities | static |
+| Ownership & Responsibility | Instance | MANDATORY (event-based) | All | dynamic |
 
 ---
 
-## 5. GPI – Zwei Implementierungsvarianten
+## 5. GPI – Two Implementation Variants
 
-Das Submodell `GeneralProductInformation` liegt in zwei Varianten vor:
+The `GeneralProductInformation` submodel exists in two variants:
 
-### Variante A: Direkte Datenwerte
-**Datei:** `sm_general_product_information_battery_001.json`  
-Alle Felder enthalten konkrete Werte (`"value": "..."`).  
-→ **Einsatz:** Demonstrator, Prototyp, BaSyx-Testumgebung
+### Variant A: Direct Data Values
+**File:** `sm_general_product_information_battery_001.json`
+All fields contain concrete values (`"value": "..."`).
+→ **Use case:** demonstrator, prototype, BaSyx test environment
 
-### Variante B: Externe Systemreferenzen
-**Datei:** `sm_general_product_information_battery_001_refVariant.json`  
-Alle Felder enthalten `"valueId"` mit URI-Referenz auf das Quellsystem.  
-→ **Einsatz:** Produktive Umgebung, echte Systemintegration
+### Variant B: External System References
+**File:** `sm_general_product_information_battery_001_refVariant.json`
+All fields contain a `"valueId"` with a URI reference to the source system.
+→ **Use case:** production environment, real system integration
 
-#### Systemzuordnung (Variante B)
+#### System Mapping (Variant B)
 
-| Quellsystem | Anbindung | Felder |
+| Source system | Connection | Fields |
 |---|---|---|
-| **ERP** | REST-API, OAuth2 | BatteryId, ManufacturerName, ManufacturerAddress |
-| **PLM**  | REST-API, OAuth2 | ModelId, BatteryCategory, TechnicalSpecification |
-| **MES** | REST-API, OAuth2 | BatchId, ManufacturingDate |
-| **Governance-Service** (intern) | REST-API, OAuth2 | BatteryStatus, Versionierung, Verantwortlichkeit |
-| **Audit-Trail-DB** (intern) | REST-API | AuditReference |
+| **ERP** | REST API, OAuth2 | BatteryId, ManufacturerName, ManufacturerAddress |
+| **PLM**  | REST API, OAuth2 | ModelId, BatteryCategory, TechnicalSpecification |
+| **MES** | REST API, OAuth2 | BatchId, ManufacturingDate |
+| **Governance service** (internal) | REST API, OAuth2 | BatteryStatus, versioning, responsibility |
+| **Audit trail DB** (internal) | REST API | AuditReference |
 
 ---
 
-## 6. Datentypen und Feldkennzeichnung
+## 6. Data Types and Field Markers
 
-Alle Felder in den JSON-Dateien enthalten folgende Metadaten-Felder (mit `_`-Präfix – keine AAS-Standardfelder, nur zur Dokumentation):
+All fields in the JSON files contain the following metadata fields (with `_` prefix – not AAS standard fields, for documentation purposes only):
 
-| Feld | Bedeutung |
+| Field | Meaning |
 |---|---|
-| `_dataSource` | Quellsystem, aus dem der Wert stammt |
-| `_dataType` | `static` = unveränderlich nach Produktion \| `dynamic` = wird über Lifecycle aktualisiert |
-| `_regulatoryRef` | Artikel/Anhang der EU-Batterieverordnung 2023/1542 + Verpflichtungsgrad |
-| `_eclass` | ECLASS IRDI für semantische Referenzierung |
-| `_unit` | Physikalische Einheit des Wertes |
-| `_note` | Hinweis für Entwickler / zukünftige Implementierung |
+| `_dataSource` | Source system the value originates from |
+| `_dataType` | `static` = unchangeable after production \| `dynamic` = updated over the lifecycle |
+| `_regulatoryRef` | Article/annex of the EU Battery Regulation 2023/1542 + level of obligation |
+| `_eclass` | ECLASS IRDI for semantic referencing |
+| `_unit` | Physical unit of the value |
+| `_note` | Note for developers / future implementation |
 
-> **Wichtig:** Felder mit `_`-Präfix sind **keine AAS-Standardfelder**. Sie dienen der Dokumentation und müssen vor dem Produktionseinsatz entfernt oder in `description`-Felder überführt werden.
+> **Important:** Fields with the `_` prefix are **not standard AAS fields**. They serve documentation purposes and must be removed or migrated into `description` fields before production use.
 
 ---
 
-## 7. Statische vs. dynamische Daten
+## 7. Static vs. Dynamic Data
 
-### Statische Daten
-Entstehen bei der Produktion und ändern sich danach **nicht mehr**:
-- Seriennummer, Modell-ID, Chargennummer
-- Herstellerinformationen
-- Technische Spezifikation (Spannung, Kapazität, Chemie)
-- CO₂-Fußabdruck (Typebene)
-- Materialzusammensetzung
+### Static Data
+Established during production and **never changes afterward**:
+- Serial number, model ID, batch number
+- Manufacturer information
+- Technical specification (voltage, capacity, chemistry)
+- CO₂ footprint (type level)
+- Material composition
 
-### Dynamische Daten
-Werden über den **Lebenszyklus kontinuierlich aktualisiert**:
+### Dynamic Data
+Continuously updated over the **lifecycle**:
 
-| Feld | Auslöser | Häufigkeit |
+| Field | Trigger | Frequency |
 |---|---|---|
-| `BatteryStatus` | Lifecycle-Events (Kauf, Second Life, Recycling) | ereignisbasiert |
-| `ResponsibleOperator` | Eigentumswechsel | ereignisbasiert |
-| `SubmodelVersion` | Jede Änderung an einem Submodell | bei Änderung |
-| `LastUpdatedAt` | Jede Änderung | bei Änderung |
-| `SoH` (Performance-SM) | Messdaten vom BMS | regelmäßig (täglich/wöchentlich) |
-| `ChargeCount` | Ladevorgänge | regelmäßig |
-| `AuditReference` | Jedes Governance-Event | ereignisbasiert |
+| `BatteryStatus` | Lifecycle events (purchase, second life, recycling) | event-based |
+| `ResponsibleOperator` | Change of ownership | event-based |
+| `SubmodelVersion` | Every change to a submodel | on change |
+| `LastUpdatedAt` | Every change | on change |
+| `SoH` (Performance SM) | Measurement data from the BMS | regularly (daily/weekly) |
+| `ChargeCount` | Charging cycles | regularly |
+| `AuditReference` | Every governance event | event-based |
 
 ---
 
-## 8. Lifecycle-Events und DBP-Aktualisierungen
+## 8. Lifecycle Events and DBP Updates
 
-Gemäß dem Referenzmodell (vgl. Masterarbeit, Abschnitt 5.2.2.1 und Abbildung 5.4) lösen folgende Ereignisse Aktualisierungen im DBP aus:
+According to the reference model (cf. master's thesis, section 5.2.2.1 and figure 5.4), the following events trigger updates to the DBP:
 
 ```
-Produktion           → DBP v1.0 erstellt (Instanz, Typ verknüpft)
+Production           → DBP v1.0 created (instance linked to type)
       │
-Eigentumstransfer    → Ownership-SM aktualisiert, Governance-Metadaten
+Ownership transfer   → Ownership SM updated, governance metadata
       │
-Nutzung / Wartung    → Performance-SM aktualisiert (SoH, Zyklen)
+Use / Maintenance    → Performance SM updated (SoH, cycles)
       │
-Second-Life          → Neue DBP-Instanz (v2.0) mit Parent-Child-Referenz
+Second life          → New DBP instance (v2.0) with parent-child reference
       │                 BatteryStatus = "Repurposed"
-Remanufacturing      → Material- und Performance-Daten partiell aktualisiert
+Remanufacturing       → Material and performance data partially updated
       │
-Recycling            → Finale Instanzaktualisierung, Archivierung
-                       BatteryStatus = "Waste"
+Recycling             → Final instance update, archiving
+                        BatteryStatus = "Waste"
 ```
 
 ---
 
-## 9. Einschränkungen des Prototyps
+## 9. Prototype Limitations
 
-Folgende Aspekte wurden im Prototyp **nicht implementiert** (konzeptionell vorgesehen):
+The following aspects were **not implemented** in the prototype (conceptually foreseen):
 
-| Aspekt | Status | Verweis |
+| Aspect | Status | Reference |
 |---|---|---|
-| RBAC / Zugriffskontrolle | Konzeptionell (Tabellen 5.6, 5.7) | Kapitel 8.4: nächster Schritt |
-| OPC UA / MQTT Integration | Konzeptionell | Kapitel 8.4 |
-| EDC / Datenraum-Anbindung | Konzeptionell | Kapitel 8.4 |
-| Vollständige IRDI-Referenzen | Strukturell vorbereitet | Kapitel 8.4 |
-| Dynamische Laufzeitdaten (SoH) | Konzeptionell | Kapitel 8.4 |
-| Policy-Enforcement | Konzeptionell | Kapitel 8.4 |
+| RBAC / access control | Conceptual (tables 5.6, 5.7) | Chapter 8.4: next step |
+| OPC UA / MQTT integration | Conceptual | Chapter 8.4 |
+| EDC / data space integration | Conceptual | Chapter 8.4 |
+| Complete IRDI references | Structurally prepared | Chapter 8.4 |
+| Dynamic runtime data (SoH) | Conceptual | Chapter 8.4 |
+| Policy enforcement | Conceptual | Chapter 8.4 |
 
-Der Prototyp validiert **strukturelle Konsistenz und technische Instanziierbarkeit** – nicht den produktiven Betrieb.
+The prototype validates **structural consistency and technical instantiability** – not production operation.
 
 ---
 
-## 10. BaSyx-Registrierung
+## 10. BaSyx Registration
 
-Alle AAS-Instanzen und Submodelle müssen in der BaSyx-Umgebung registriert werden.  
-Das Script `add_submodels.sh` automatisiert diesen Prozess.
+All AAS instances and submodels must be registered in the BaSyx environment.
+The `add_submodels.sh` script automates this process.
 
-### Manuelle Registrierung (REST-API)
+### Manual Registration (REST API)
 
 ```bash
-# AAS-Instanz registrieren
+# Register AAS instance
 curl -X POST http://localhost:8081/shells \
   -H "Content-Type: application/json" \
   -d @aas_instances/battery_module_001.json
 
-# AAS-Modell registrieren
+# Register AAS model
 curl -X POST http://localhost:8081/shells \
   -H "Content-Type: application/json" \
   -d @aas_model/battery_model_001.json
 
-# GPI Submodell registrieren (Variante A)
+# Register GPI submodel (variant A)
 curl -X POST http://localhost:8081/submodels \
   -H "Content-Type: application/json" \
   -d @submodel_instances/sm_general_product_information_battery_001.json
 ```
 
-### Zugriff nach Registrierung
+### Access After Registration
 
 ```
-# AAS-Instanz abrufen
+# Retrieve AAS instance
 GET http://localhost:8081/shells/urn%3Auuid%3Aaas-battery-module-001
 
-# Submodell-Element abrufen
+# Retrieve submodel element
 GET http://localhost:8081/submodels/urn%3Adbp%3Asubmodel%3AgeneralProductInformation%3Abattery001/submodel-elements/BatteryIdentification.BatteryId
 
 # BaSyx Web UI
@@ -231,4 +231,4 @@ http://localhost:3000
 
 ---
 
-*Letzte Aktualisierung: März 2026*
+*Last updated: March 2026*
