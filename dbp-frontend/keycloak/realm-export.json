@@ -1,0 +1,206 @@
+{
+  "realm": "dbp-realm",
+  "displayName": "Digital Battery Pass",
+  "displayNameHtml": "<b>Digital Battery Pass</b>",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "manufacturer",
+        "description": "Hersteller \u2013 Vollzugriff auf Stamm- und Produktionsdaten (Tabelle 5.6)",
+        "composite": false
+      },
+      {
+        "name": "operator",
+        "description": "Betreiber \u2013 Lesezugriff auf Stammdaten und Performance-Daten",
+        "composite": false
+      },
+      {
+        "name": "recycler",
+        "description": "Recycler \u2013 Lesezugriff auf Materialzusammensetzung und Demontageinfos",
+        "composite": false
+      },
+      {
+        "name": "authority",
+        "description": "Beh\u00f6rde \u2013 Vollzugriff auf alle Submodelle",
+        "composite": false
+      },
+      {
+        "name": "secondLifeOperator",
+        "description": "Second-Life-Betreiber \u2013 Schreibzugriff auf Betriebsdaten (Tabelle 5.7)",
+        "composite": false
+      },
+      {
+        "name": "remanufacturer",
+        "description": "Remanufacturer \u2013 Schreibzugriff auf Materialien und Performance",
+        "composite": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "dbp-frontend",
+      "name": "DBP Frontend Viewer",
+      "description": "Digital Battery Pass Frontend (Masterarbeit Zhusupbekova, Uni Siegen)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "redirectUris": [
+        "http://localhost:8090/*",
+        "http://localhost:3000/*",
+        "http://*:8090/*",
+        "http://dbp-frontend:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8090",
+        "http://localhost:3000",
+        "+"
+      ],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    }
+  ],
+  "users": [
+    {
+      "username": "hersteller",
+      "email": "hersteller@ejot.example.com",
+      "firstName": "EJOT",
+      "lastName": "Hersteller",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "hersteller123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "manufacturer"
+      ],
+      "_comment": "Demo-User f\u00fcr Herstellerrolle \u2013 Passwort in Produktion \u00e4ndern!"
+    },
+    {
+      "username": "betreiber",
+      "email": "betreiber@example.com",
+      "firstName": "Anlagen",
+      "lastName": "Betreiber",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "betreiber123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ],
+      "_comment": "Demo-User f\u00fcr Betreiberrolle"
+    },
+    {
+      "username": "recycler",
+      "email": "recycler@example.com",
+      "firstName": "Recycling",
+      "lastName": "Partner",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "recycler123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "recycler"
+      ],
+      "_comment": "Demo-User f\u00fcr Recyclerrolle"
+    },
+    {
+      "username": "behoerde",
+      "email": "behoerde@example.com",
+      "firstName": "Bundes",
+      "lastName": "Beh\u00f6rde",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "behoerde123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "authority"
+      ],
+      "_comment": "Demo-User f\u00fcr Beh\u00f6rdenrolle"
+    },
+    {
+      "username": "secondlife",
+      "email": "secondlife@example.com",
+      "firstName": "Second Life",
+      "lastName": "Betreiber",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "secondlife123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "secondLifeOperator"
+      ],
+      "_comment": "Demo-User f\u00fcr Second-Life-Phase"
+    },
+    {
+      "username": "remanufacturer",
+      "email": "remanufacturer@example.com",
+      "firstName": "Remanufacturing",
+      "lastName": "Partner",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "remanufacturer123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "remanufacturer"
+      ],
+      "_comment": "Demo-User f\u00fcr Remanufacturer"
+    }
+  ],
+  "browserFlow": "browser",
+  "directGrantFlow": "direct grant",
+  "registrationFlow": "registration",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients",
+  "dockerAuthenticationFlow": "docker auth",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "de",
+    "en"
+  ],
+  "defaultLocale": "de",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000
+}

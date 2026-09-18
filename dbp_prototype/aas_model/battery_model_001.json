@@ -1,0 +1,75 @@
+{
+  "id": "urn:dbp:battery:model:001",
+  "idShort": "BatteryModel001",
+  "description": [
+    {
+      "language": "de",
+      "text": "Digitaler Zwilling-Modelltyp für ein industrielles Lithium-Ionen-Batteriemodul (48V / 100Ah). Enthält typbezogene Stammdaten, die für alle Instanzen dieses Modells gelten."
+    },
+    {
+      "language": "en",
+      "text": "Digital Twin model type for an industrial Lithium-Ion battery module (48V / 100Ah). Contains type-level master data applicable to all instances of this model."
+    }
+  ],
+  "assetInformation": {
+    "assetKind": "Type",
+    "globalAssetId": "urn:ejot:battery:model:LiIon-48V-100Ah-001",
+    "assetType": "urn:idta:battery:industrial"
+  },
+  "submodels": [
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:generalProductInformation:model001"
+        }
+      ]
+    },
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:dueDiligence:battery001"
+        }
+      ]
+    },
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:carbonFootprint:model001"
+        }
+      ]
+    },
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:materialComposition:model001"
+        }
+      ]
+    },
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:performanceDurability:model001"
+        }
+      ]
+    }
+  ],
+  "_metadata": {
+    "_comment": "Dies ist die TYPEBENE der AAS. Sie kapselt modellübergreifende Informationen, die für ALLE Instanzen dieses Batteriemodells gelten. Instanzspezifische Daten (Seriennummer, SoH, Ownership) befinden sich in der Instanz-AAS (battery_module_001.json).",
+    "_dataLevel": "Type",
+    "_regulatoryBasis": "EU-Batterieverordnung 2023/1542, Art. 13, Art. 38, Anhang XIII",
+    "_standardsBasis": "IEC 63278-1 (AAS), DIN DKE SPEC 99100:2025-02",
+    "_createdAt": "2025-01-15",
+    "_version": "1.0.0",
+    "_status": "active"
+  }
+}

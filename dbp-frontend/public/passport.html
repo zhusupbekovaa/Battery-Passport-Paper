@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battery Passport</title>
+  <script src="/auth.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0a0f0d;
+      --surface:     #111814;
+      --card:        #161e1a;
+      --card-hover:  #1c2820;
+      --border:      #1f2e27;
+      --border-light:#2a3d32;
+      --green:       #3ddc84;
+      --green-dim:   #2aad63;
+      --green-glow:  #3ddc8418;
+      --text:        #e8f0ec;
+      --text-muted:  #7a9989;
+      --text-dim:    #3d5447;
+      --accent:      #a8ffcc;
+      --red:         #ff6b6b;
+      --yellow:      #ffd166;
+      --blue:        #74c0fc;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 40px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      background: rgba(10,15,13,0.85);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem; color: var(--green);
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 28px; height: 28px;
+      border: 1px solid var(--green);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+    }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .verified-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--green);
+      border: 1px solid var(--green-dim);
+      background: var(--green-glow);
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .verified-badge::before { content: '✓'; font-weight: bold; }
+
+    /* ── Loading / Error ── */
+    #loading, #error-state {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--bg); gap: 16px;
+    }
+    #error-state { display: none; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 2px solid var(--border);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Main layout ── */
+    #content { display: none; }
+
+    .page-wrapper {
+      position: relative; z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+
+    /* ── Hero band ── */
+    .passport-hero {
+      padding: 40px 0 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .passport-hero-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 24px;
+      flex-wrap: wrap;
+    }
+    .passport-category {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .passport-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+    .passport-id {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+    .passport-id span { color: var(--green-dim); }
+
+    /* Status chip */
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .status-chip.original { background: rgba(61,220,132,0.12); border: 1px solid var(--green-dim); color: var(--green); }
+    .status-chip.repurposed { background: rgba(116,192,252,0.12); border: 1px solid #5598cc; color: var(--blue); }
+    .status-chip.waste { background: rgba(255,107,107,0.12); border: 1px solid #cc5555; color: var(--red); }
+
+    .passport-meta {
+      display: flex; gap: 32px; flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .meta-item { display: flex; flex-direction: column; gap: 2px; }
+    .meta-label { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-family: 'DM Mono', monospace; }
+    .meta-value { font-size: 0.9rem; color: var(--text); font-weight: 500; }
+
+    /* ── Section navigation tabs ── */
+    .tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+      overflow-x: auto;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+    .tab-btn {
+      background: none; border: none;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      padding: 14px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    .tab-section { display: none; animation: fadeUp 0.3s ease both; }
+    .tab-section.active { display: block; }
+
+    /* ── Section headers ── */
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 24px;
+    }
+    .section-icon {
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; background: var(--card);
+      flex-shrink: 0;
+    }
+    .section-title { font-family: 'DM Serif Display', serif; font-size: 1.25rem; }
+    .section-reg { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--green-dim); margin-left: auto; }
+
+    /* ── Cards grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .card:hover { background: var(--card-hover); border-color: var(--border-light); }
+
+    .card-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .card-value.big { font-family: 'DM Serif Display', serif; font-size: 2rem; }
+    .card-value.green { color: var(--green); }
+    .card-value.yellow { color: var(--yellow); }
+    .card-value.blue { color: var(--blue); }
+    .card-unit { font-size: 0.8rem; color: var(--text-muted); margin-left: 4px; font-weight: 400; }
+    .card-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .card-reg { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--text-dim); margin-top: 8px; }
+
+    /* ── Data list (key-value rows) ── */
+    .data-list { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .data-row {
+      display: flex; align-items: flex-start;
+      padding: 14px 20px; gap: 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .data-row:last-child { border-bottom: none; }
+    .data-row:hover { background: var(--card); }
+    .data-key {
+      flex: 0 0 220px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      padding-top: 1px;
+    }
+    .data-val {
+      flex: 1;
+      font-size: 0.88rem;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .data-val a { color: var(--green-dim); text-decoration: none; }
+    .data-val a:hover { color: var(--green); text-decoration: underline; }
+    .data-badge {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+    .data-badge.static { background: rgba(122,153,137,0.15); color: var(--text-muted); }
+    .data-badge.dynamic { background: rgba(61,220,132,0.12); color: var(--green-dim); }
+
+    /* ── CO₂ bar chart ── */
+    .co2-phases { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+    .co2-phase { }
+    .co2-phase-header {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; margin-bottom: 5px;
+    }
+    .co2-phase-name { color: var(--text-muted); }
+    .co2-phase-val { color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.75rem; }
+    .co2-bar-bg {
+      height: 6px; background: var(--border);
+      border-radius: 3px; overflow: hidden;
+    }
+    .co2-bar-fill {
+      height: 100%; border-radius: 3px;
+      background: var(--green);
+      transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    }
+    .co2-bar-fill.production { background: #74c0fc; }
+    .co2-bar-fill.distribution { background: var(--yellow); }
+    .co2-bar-fill.eol { background: #ff9f7f; }
+
+    /* ── SoH gauge ── */
+    .soh-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 24px 0 16px;
+    }
+    .soh-arc { position: relative; width: 160px; height: 90px; }
+    .soh-arc svg { overflow: visible; }
+    .soh-number {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.8rem;
+      color: var(--green);
+      text-align: center;
+      margin-top: 8px;
+    }
+    .soh-label { font-size: 0.72rem; color: var(--text-muted); text-align: center; margin-top: 2px; }
+
+    /* ── Recycled content pills ── */
+    .recycled-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+    .recycled-pill {
+      flex: 1; min-width: 120px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      text-align: center;
+    }
+    .recycled-pill .r-mineral {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .recycled-pill .r-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      color: var(--green);
+    }
+    .recycled-pill .r-unit { font-size: 0.75rem; color: var(--text-muted); }
+    .recycled-pill .r-target { font-size: 0.65rem; color: var(--text-dim); margin-top: 4px; }
+
+    /* ── Certification items ── */
+    .cert-list { display: flex; flex-direction: column; gap: 12px; }
+    .cert-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .cert-icon { font-size: 20px; flex-shrink: 0; }
+    .cert-name { font-size: 0.88rem; font-weight: 500; }
+    .cert-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .cert-link { margin-left: auto; }
+    .cert-link a {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--green-dim);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    .cert-link a:hover { color: var(--green); border-color: var(--green-dim); }
+
+    /* ── Raw JSON toggle ── */
+    .raw-toggle {
+      background: none; border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      padding: 8px 16px; border-radius: 8px;
+      cursor: pointer; margin-bottom: 16px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .raw-toggle:hover { color: var(--green); border-color: var(--green-dim); }
+    .raw-json {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      overflow-x: auto;
+      white-space: pre;
+      display: none;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .raw-json.visible { display: block; }
+
+    /* ── Governance row ── */
+    .gov-strip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; gap: 32px; flex-wrap: wrap;
+      margin-top: 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+    }
+    .gov-item { }
+    .gov-key { color: var(--text-dim); margin-bottom: 3px; }
+    .gov-val { color: var(--text-muted); }
+    .gov-val.ok { color: var(--green-dim); }
+
+    /* ── Back button ── */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 0.8rem;
+      padding: 7px 14px; border-radius: 8px;
+      cursor: pointer; text-decoration: none;
+      transition: color 0.2s, border-color 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .back-btn:hover { color: var(--green); border-color: var(--green-dim); }
+
+    /* ── RBAC / Auth ── */
+    .role-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'DM Mono', monospace; font-size: 0.68rem;
+      padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+      border: 1px solid; cursor: default;
+    }
+    .role-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    .login-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green); border: none;
+      color: #0a0f0d; font-family: 'DM Sans', sans-serif;
+      font-weight: 600; font-size: 0.78rem;
+      padding: 7px 16px; border-radius: 8px;
+      cursor: pointer; text-decoration: none;
+      transition: background 0.2s;
+    }
+    .login-btn:hover { background: var(--accent); }
+
+    .logout-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--text-muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem; padding: 6px 12px; border-radius: 8px;
+      cursor: pointer; transition: color 0.2s, border-color 0.2s;
+    }
+    .logout-btn:hover { color: var(--red); border-color: var(--red); }
+
+    /* Gesperrtes Feld */
+    .restricted-field {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px;
+      background: rgba(255,107,107,0.04);
+      border: 1px dashed rgba(255,107,107,0.2);
+      border-radius: 8px; margin: 4px 0;
+    }
+    .restricted-icon { font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+    .restricted-text { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; }
+    .restricted-text strong { color: var(--text-muted); display: block; margin-bottom: 2px; }
+    .restricted-roles { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text-dim); margin-top: 4px; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--border); margin: 32px 0; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      .page-wrapper { padding: 0 16px 60px; }
+      header { padding: 12px 16px; }
+      .data-key { flex: 0 0 140px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="font-size:0.82rem;color:var(--text-muted);font-family:'DM Mono',monospace">Lade Passport-Daten…</p>
+</div>
+
+<div id="error-state">
+  <p style="font-size:2rem">⚠️</p>
+  <p style="font-family:'DM Serif Display',serif;font-size:1.4rem;margin:8px 0">Passport nicht gefunden</p>
+  <p id="error-msg" style="font-size:0.82rem;color:var(--text-muted);margin-bottom:24px"></p>
+  <a href="/" class="back-btn">← Zurück zur Suche</a>
+</div>
+
+<div id="content">
+  <header>
+    <a class="logo" href="/">
+      <div class="logo-icon">⚡</div>
+      DBP Viewer
+    </a>
+    <div class="header-right">
+      <span class="verified-badge" id="verifiedBadge">AAS-konform</span>
+      <span id="adapterBadge" style="
+        font-family:'DM Mono',monospace;font-size:0.65rem;
+        border:1px solid var(--border);padding:5px 10px;border-radius:20px;
+        color:var(--text-muted);white-space:nowrap;
+      ">—</span>
+      <!-- RBAC: wird per JS befüllt -->
+      <span id="roleBadge" class="role-badge" style="display:none"></span>
+      <button id="loginBtn"  class="login-btn"  onclick="startLogin()"  style="display:none">🔑 Anmelden</button>
+      <button id="logoutBtn" class="logout-btn" onclick="doLogout()"    style="display:none">Abmelden</button>
+      <a href="/" class="back-btn">← Suche</a>
+    </div>
+  </header>
+
+  <div class="page-wrapper">
+
+    <!-- Hero -->
+    <div class="passport-hero">
+      <div class="passport-hero-top">
+        <div>
+          <div class="passport-category" id="passportCategory">Industriebatterie · Digital Battery Pass</div>
+          <div class="passport-title" id="passportTitle">—</div>
+          <div class="passport-id">ID: <span id="passportId">—</span></div>
+        </div>
+        <div id="statusChip" class="status-chip original">● Original</div>
+      </div>
+      <div class="passport-meta">
+        <div class="meta-item">
+          <span class="meta-label">Hersteller</span>
+          <span class="meta-value" id="metaManufacturer">—</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Herstelldatum</span>
+          <span class="meta-value" id="metaDate">—</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Modell</span>
+          <span class="meta-value" id="metaModel">—</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Chemie</span>
+          <span class="meta-value" id="metaChemistry">—</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Energie</span>
+          <span class="meta-value" id="metaEnergy">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Übersicht</button>
+      <button class="tab-btn" data-tab="technical">Technisch</button>
+      <button class="tab-btn" data-tab="carbon">CO₂-Fußabdruck</button>
+      <button class="tab-btn" data-tab="materials">Materialien</button>
+      <button class="tab-btn" data-tab="performance">Performance</button>
+      <button class="tab-btn" data-tab="lifecycle">Lebenszyklus</button>
+      <button class="tab-btn" data-tab="certification">Zertifikate</button>
+      <button class="tab-btn" data-tab="raw">Rohdaten</button>
+    </div>
+
+    <!-- ── TAB: Overview ── -->
+    <div class="tab-section active" id="tab-overview">
+
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="card">
+          <div class="card-label">State of Health</div>
+          <div class="card-value big green" id="ov-soh">—</div>
+          <div class="card-sub" id="ov-soh-sub">—</div>
+          <div class="card-reg">Art. 14 · PFLICHT</div>
+        </div>
+        <div class="card">
+          <div class="card-label">CO₂-Fußabdruck</div>
+          <div class="card-value big" id="ov-co2">—</div>
+          <div class="card-sub" id="ov-co2-class">—</div>
+          <div class="card-reg">Art. 7 · PFLICHT</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Ladezyklen</div>
+          <div class="card-value big blue" id="ov-cycles">—</div>
+          <div class="card-sub" id="ov-cycles-max">—</div>
+          <div class="card-reg">Art. 14 · PFLICHT</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Recyclingeffizienz</div>
+          <div class="card-value big yellow" id="ov-recycling">—</div>
+          <div class="card-sub">Rückgewinnbare Materialien</div>
+          <div class="card-reg">Art. 70 · PFLICHT</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="section-header">
+            <div class="section-icon">🏭</div>
+            <div class="section-title">Hersteller</div>
+            <div class="section-reg">Art. 38</div>
+          </div>
+          <div class="data-list" id="manufacturerList"></div>
+        </div>
+        <div>
+          <div class="section-header">
+            <div class="section-icon">👤</div>
+            <div class="section-title">Verantwortlicher Beteiligter</div>
+            <div class="section-reg">Art. 77 Abs. 5</div>
+          </div>
+          <div class="data-list" id="ownerList"></div>
+          <div class="section-header" style="margin-top:28px">
+            <div class="section-icon">⚙️</div>
+            <div class="section-title">Governance</div>
+          </div>
+          <div class="gov-strip" id="govStrip"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: Technical ── -->
+    <div class="tab-section" id="tab-technical">
+      <div class="section-header">
+        <div class="section-icon">🔋</div>
+        <div class="section-title">Technische Spezifikation</div>
+        <div class="section-reg">Art. 13, Art. 14</div>
+      </div>
+      <div class="data-list" id="technicalList"></div>
+      <div class="divider"></div>
+      <div class="section-header">
+        <div class="section-icon">🔑</div>
+        <div class="section-title">Digitale Identifikatoren</div>
+        <div class="section-reg">Art. 77 Abs. 3</div>
+      </div>
+      <div class="data-list" id="identifiersList"></div>
+    </div>
+
+    <!-- ── TAB: Carbon ── -->
+    <div class="tab-section" id="tab-carbon">
+      <div class="grid-2" style="margin-bottom:28px">
+        <div class="card">
+          <div class="card-label">CO₂-Gesamtfußabdruck</div>
+          <div class="card-value big green" id="co2-total">—</div>
+          <div class="card-sub" id="co2-unit">kg CO₂e / kWh</div>
+          <div class="card-reg">Art. 7 Abs. 1 · PFLICHT</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Leistungsklasse</div>
+          <div class="card-value big yellow" id="co2-class">—</div>
+          <div class="card-sub">EU-Klassifizierungssystem (A–G)</div>
+          <div class="card-reg">Art. 7 Abs. 2 · PFLICHT</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div class="section-title">Aufschlüsselung nach Lebenszyklusphasen</div>
+        <div class="section-reg">Art. 7 Abs. 1 lit. b</div>
+      </div>
+      <div class="card" style="margin-bottom:28px">
+        <div class="co2-phases" id="co2Phases"></div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div class="section-title">LCA-Studie</div>
+        <div class="section-reg">Art. 7 Abs. 1 lit. c</div>
+      </div>
+      <div class="data-list" id="co2StudyList"></div>
+    </div>
+
+    <!-- ── TAB: Materials ── -->
+    <div class="tab-section" id="tab-materials">
+      <div class="section-header">
+        <div class="section-icon">⚗️</div>
+        <div class="section-title">Aktivmaterialien</div>
+        <div class="section-reg">Anhang XIII §2</div>
+      </div>
+      <div class="data-list" id="activeMaterialsList"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <div class="section-icon">♻️</div>
+        <div class="section-title">Rezyklatanteile kritischer Rohstoffe</div>
+        <div class="section-reg">Art. 8 · PFLICHT</div>
+      </div>
+      <div class="recycled-grid" id="recycledGrid"></div>
+      <p style="font-size:0.72rem;color:var(--text-dim);margin-top:12px;font-family:'DM Mono',monospace">
+        Zielwerte 2031: Kobalt ≥16% · Lithium ≥6% · Nickel ≥6%
+      </p>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <div class="section-icon">🌍</div>
+        <div class="section-title">Herkunft kritischer Rohstoffe</div>
+        <div class="section-reg">Art. 39 ff.</div>
+      </div>
+      <div class="data-list" id="originList"></div>
+    </div>
+
+    <!-- ── TAB: Performance ── -->
+    <div class="tab-section" id="tab-performance">
+      <div class="section-header">
+        <div class="section-icon">📈</div>
+        <div class="section-title">Aktueller Betriebszustand</div>
+        <div class="section-reg">Art. 14 · dynamisch</div>
+      </div>
+      <div class="grid-3" style="margin-bottom:28px">
+        <div class="card">
+          <div class="soh-wrap">
+            <svg width="160" height="90" viewBox="0 0 160 90">
+              <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1f2e27" stroke-width="8" stroke-linecap="round"/>
+              <path id="sohArc" d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#3ddc84" stroke-width="8" stroke-linecap="round"
+                stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            </svg>
+            <div class="soh-number" id="soh-big">—</div>
+            <div class="soh-label">State of Health</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Ladezyklen</div>
+          <div class="card-value big blue" id="perf-cycles">—</div>
+          <div class="card-sub" id="perf-cycles-of">von — Zyklen Lebensdauer</div>
+          <div class="card-reg">Art. 14 · PFLICHT</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Verbleibende Kapazität</div>
+          <div class="card-value big" id="perf-cap">—</div>
+          <div class="card-sub">Ah · letzte Messung</div>
+          <div id="perf-measured" class="card-reg"></div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-icon">🌡️</div>
+        <div class="section-title">Temperaturhistorie</div>
+        <div class="section-reg">Art. 14 · SHOULD</div>
+      </div>
+      <div class="data-list" id="tempList"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <div class="section-icon">📐</div>
+        <div class="section-title">Auslegungsparameter</div>
+        <div class="section-reg">Art. 14 · statisch</div>
+      </div>
+      <div class="data-list" id="designList"></div>
+    </div>
+
+    <!-- ── TAB: Lifecycle ── -->
+    <div class="tab-section" id="tab-lifecycle">
+      <div class="section-header">
+        <div class="section-icon">🔄</div>
+        <div class="section-title">Lebenszyklus-Status</div>
+        <div class="section-reg">Anhang XIII §8</div>
+      </div>
+      <div class="data-list" id="lcStatusList"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <div class="section-icon">🔧</div>
+        <div class="section-title">Demontage & Recycling</div>
+        <div class="section-reg">Art. 11, Art. 70</div>
+      </div>
+      <div class="data-list" id="dismantlingList"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <div class="section-icon">🗑️</div>
+        <div class="section-title">Abfallbehandlung</div>
+        <div class="section-reg">Art. 74</div>
+      </div>
+      <div class="data-list" id="wasteList"></div>
+    </div>
+
+    <!-- ── TAB: Certification ── -->
+    <div class="tab-section" id="tab-certification">
+      <div class="section-header">
+        <div class="section-icon">📜</div>
+        <div class="section-title">Zertifikate & Konformität</div>
+        <div class="section-reg">Art. 13, Anhang XIII §5</div>
+      </div>
+      <div class="cert-list" id="certList"></div>
+    </div>
+
+    <!-- ── TAB: Raw ── -->
+    <div class="tab-section" id="tab-raw">
+      <div class="section-header">
+        <div class="section-icon">{ }</div>
+        <div class="section-title">Rohdaten (AAS JSON)</div>
+      </div>
+      <button class="raw-toggle" id="rawToggle">JSON einblenden</button>
+      <pre class="raw-json" id="rawJson"></pre>
+    </div>
+
+  </div><!-- /page-wrapper -->
+</div><!-- /content -->
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmtNum = (v, unit) => v ? `${v}<span class="card-unit">${unit||''}</span>` : '—';
+function setHtml(id, html) { const el=$(id); if(el) el.innerHTML=html; }
+
+// ── Render: restricted field overlay ─────────────────────────────────────────
+function renderRestricted(obj) {
+  const roles = (obj._requiredRoles || []).join(', ') || '—';
+  return `<div class="restricted-field">
+    <span class="restricted-icon">🔒</span>
+    <div class="restricted-text">
+      <strong>Zugriff eingeschränkt</strong>
+      ${obj._reason || 'Keine Berechtigung für dieses Datenfeld.'}
+      <div class="restricted-roles">Erforderliche Rolle(n): ${roles}</div>
+    </div>
+  </div>`;
+}
+
+// ── Render: single value – handles _restricted objects ───────────────────────
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '<span style="color:var(--text-dim)">—</span>';
+  if (typeof v === 'object' && v._restricted) return renderRestricted(v);
+  return String(v);
+}
+
+// ── Render: data row  ─────────────────────────────────────────────────────────
+function dataRow(key, val, badge) {
+  const bHtml = badge ? `<span class="data-badge ${badge}">${badge}</span>` : '';
+  return `<div class="data-row">
+    <div class="data-key">${key}</div>
+    <div class="data-val">${fmt(val)}${bHtml}</div>
+  </div>`;
+}
+function dataLink(key, url, label) {
+  const v = url ? `<a href="${url}" target="_blank" rel="noopener">${label||'↗ Öffnen'}</a>` : null;
+  return dataRow(key, v, 'static');
+}
+
+// ── Render: section blocked entirely ─────────────────────────────────────────
+function sectionRestricted(obj) {
+  return `<div style="padding:20px 0">${renderRestricted(obj)}</div>`;
+}
+
+// ── Passport ID from URL ──────────────────────────────────────────────────────
+const passportId = decodeURIComponent(location.pathname.replace('/passport/', ''));
+
+// ── Auth + load ───────────────────────────────────────────────────────────────
+async function boot() {
+  // auth.js initialisieren (PKCE-Callback verarbeiten, Token prüfen)
+  const authState = await auth.init();
+  updateAuthUI(authState);
+  await loadPassport();
+}
+
+function updateAuthUI(authState) {
+  const role     = authState.role || auth.getRole();
+  const userInfo = authState.userInfo || auth.getUserInfo();
+  const loggedIn = authState.loggedIn || auth.isLoggedIn();
+
+  const ROLE_LABELS = {
+    public:'Öffentlich', manufacturer:'Hersteller', operator:'Betreiber',
+    recycler:'Recycler', authority:'Behörde',
+    secondLifeOperator:'Second-Life-Betreiber', remanufacturer:'Remanufacturer',
+  };
+  const ROLE_COLORS = {
+    public:             '#7a9989',
+    manufacturer:       '#74c0fc',
+    operator:           '#ffd166',
+    recycler:           '#ff9f7f',
+    authority:          '#3ddc84',
+    secondLifeOperator: '#c084fc',
+    remanufacturer:     '#fb923c',
+  };
+
+  // Role badge
+  const badge = $('roleBadge');
+  if (badge && role !== 'public') {
+    const color = ROLE_COLORS[role] || '#7a9989';
+    badge.style.display      = 'inline-flex';
+    badge.textContent        = ROLE_LABELS[role] || role;
+    badge.style.color        = color;
+    badge.style.borderColor  = color + '60';
+    badge.style.background   = color + '18';
+    if (userInfo?.name) badge.title = userInfo.name;
+  }
+
+  // Login / Logout buttons
+  const loginBtn  = $('loginBtn');
+  const logoutBtn = $('logoutBtn');
+  if (authState.rbacEnabled === false) {
+    if (loginBtn)  loginBtn.style.display  = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+  } else {
+    if (loginBtn)  loginBtn.style.display  = loggedIn ? 'none' : 'inline-flex';
+    if (logoutBtn) logoutBtn.style.display = loggedIn ? 'inline-block' : 'none';
+  }
+}
+
+async function loadPassport() {
+  try {
+    // auth.apiFetch hängt Bearer-Token automatisch an
+    const res = await auth.apiFetch(`/api/passport/${encodeURIComponent(passportId)}`);
+    if (!res.ok) throw new Error(res.statusText);
+    const p = await res.json();
+    $('loading').style.display = 'none';
+    $('content').style.display = 'block';
+    render(p);
+  } catch (err) {
+    $('loading').style.display = 'none';
+    $('error-state').style.display = 'flex';
+    $('error-msg').textContent = err.message;
+  }
+}
+
+// ── render ────────────────────────────────────────────────────────────────────
+function render(p) {
+  const i   = p.identification  || {};
+  const m   = p.manufacturer    || {};
+  const t   = p.technical       || {};
+  const cf  = p.carbonFootprint || {};
+  const rc  = p.recycledContent || {};
+  const mat = p.materials       || {};
+  const perf= p.performance     || {};
+  const lc  = p.lifecycle       || {};
+  const own = p.ownership       || {};
+  const cert= p.certification   || {};
+  const gov = p.governance      || {};
+  const rbac= p._rbac           || {};
+
+  document.title = `DBP · ${i.batteryId || p.idShort || passportId}`;
+
+  // ── Adapter badge ──────────────────────────────────────────────────────────
+  const adapterColors = {
+    'idta-02035': { color:'var(--blue)',   border:'#5598cc' },
+    'prototype':  { color:'var(--green)',  border:'var(--green-dim)' },
+    'generic':    { color:'var(--yellow)', border:'#cc9900' },
+  };
+  const ab = $('adapterBadge');
+  if (ab) {
+    const ac = adapterColors[p._adapterName] || adapterColors['generic'];
+    ab.textContent = p._adapterLabel || p._adapterName || '—';
+    ab.style.color = ac.color;
+    ab.style.borderColor = ac.border;
+  }
+
+  // ── Role badge (from RBAC response) ───────────────────────────────────────
+  if (rbac.role && rbac.roleColor) {
+    const badge = $('roleBadge');
+    if (badge && rbac.role !== 'public') {
+      badge.style.display     = 'inline-flex';
+      badge.textContent       = rbac.roleLabel || rbac.role;
+      badge.style.color       = rbac.roleColor.text   || 'var(--text-muted)';
+      badge.style.borderColor = rbac.roleColor.border || 'var(--border)';
+      badge.style.background  = rbac.roleColor.bg     || 'transparent';
+    }
+  }
+
+  // Hero
+  $('passportCategory').textContent = `${i.category || 'Industriebatterie'} · Digital Battery Pass`;
+  $('passportTitle').textContent    = p.idShort || i.batteryId || passportId;
+  $('passportId').textContent       = p.id || passportId;
+  $('metaManufacturer').textContent = m.name || '—';
+  $('metaDate').textContent         = m.date || '—';
+  $('metaModel').textContent        = i.modelId || '—';
+  $('metaChemistry').textContent    = t.chemistry || '—';
+  $('metaEnergy').textContent       = t.energy ? `${t.energy} kWh` : '—';
+
+  // Status chip
+  const status = (i.status || lc.status || 'original').toString().toLowerCase();
+  const sc = $('statusChip');
+  sc.className = `status-chip ${status}`;
+  const statusLabels = { original:'Original', repurposed:'Second Life', reused:'Wiederverwendet', remanufactured:'Remanufactured', waste:'Abfall' };
+  sc.textContent = `● ${statusLabels[status] || status}`;
+
+  // ── OVERVIEW KPIs ─────────────────────────────────────────────────────────
+  const sohVal = perf._restricted ? null : perf.soh;
+  const co2Val = cf._restricted   ? null : cf.total;
+  const lcVal  = lc._restricted   ? null : lc.recyclability;
+
+  $('ov-soh').innerHTML    = perf._restricted ? '🔒' : fmtNum(perf.soh, '%');
+  $('ov-soh-sub').textContent = perf._restricted ? 'Eingeschränkt' : `Letzte Messung: ${perf.lastMeasured?.slice(0,10) || '—'}`;
+  $('ov-co2').innerHTML    = cf._restricted   ? '🔒' : fmtNum(cf.total, ' kg CO₂e/kWh');
+  $('ov-co2-class').textContent = cf._restricted ? 'Eingeschränkt' : (cf.class ? `Klasse ${cf.class}` : (cf._summarized ? `Klasse ${cf.class||'—'}` : '—'));
+  $('ov-cycles').innerHTML = perf._restricted ? '🔒' : fmtNum(perf.cycles, '');
+  $('ov-cycles-max').textContent = perf._restricted ? '' : (perf.maxCycles ? `von ${perf.maxCycles} Zyklen Lebensdauer` : '—');
+  $('ov-recycling').innerHTML = lc._restricted ? '🔒' : fmtNum(lc.recyclability, '%');
+
+  // ── MANUFACTURER ──────────────────────────────────────────────────────────
+  setHtml('manufacturerList',
+    dataRow('Hersteller',   m.name,    'static') +
+    dataRow('Adresse',      m.address, 'static') +
+    dataRow('Werk',         m.plant,   'static') +
+    dataRow('Kontakt',      m.contact, 'static') +
+    dataRow('Website',      m.website ? `<a href="${m.website}" target="_blank">${m.website}</a>` : null, 'static') +
+    dataRow('Herstelldatum',m.date,    'static')
+  );
+
+  // ── OWNER ─────────────────────────────────────────────────────────────────
+  setHtml('ownerList', own._restricted
+    ? sectionRestricted(own)
+    : dataRow('Name',                own.operatorName, 'dynamic') +
+      dataRow('Rolle',               own.operatorRole, 'dynamic') +
+      dataRow('Verantwortlich seit', own.since,        'dynamic')
+  );
+
+  // ── GOVERNANCE ────────────────────────────────────────────────────────────
+  setHtml('govStrip', gov._restricted
+    ? `<div style="font-size:0.75rem;color:var(--text-dim)">🔒 Governance-Daten eingeschränkt</div>`
+    : `<div class="gov-item"><div class="gov-key">Version</div><div class="gov-val">${gov.version||'—'}</div></div>
+       <div class="gov-item"><div class="gov-key">Erstellt</div><div class="gov-val">${gov.createdAt?.slice(0,10)||'—'}</div></div>
+       <div class="gov-item"><div class="gov-key">Aktualisiert</div><div class="gov-val">${gov.updatedAt?.slice(0,10)||'—'}</div></div>
+       <div class="gov-item"><div class="gov-key">Datenqualität</div><div class="gov-val ok">${gov.quality||'—'}</div></div>`
+  );
+
+  // ── TECHNICAL ─────────────────────────────────────────────────────────────
+  setHtml('technicalList',
+    dataRow('Nennspannung',  t.voltage    ? `${t.voltage} V`   : null, 'static') +
+    dataRow('Nennkapazität', t.capacity   ? `${t.capacity} Ah` : null, 'static') +
+    dataRow('Nennenergie',   t.energy     ? `${t.energy} kWh`  : null, 'static') +
+    dataRow('Chemie',        t.chemistry, 'static') +
+    dataRow('Zelltyp',       t.cellType,  'static') +
+    dataRow('Anzahl Zellen', t.cells,     'static') +
+    dataRow('Gewicht',       t.weight     ? `${t.weight} kg`   : null, 'static') +
+    dataRow('Schutzklasse',  t.protection,'static')
+  );
+  setHtml('identifiersList',
+    dataRow('Batterie-ID',   i.batteryId,  'static') +
+    dataRow('Modell-ID',     i.modelId,    'static') +
+    dataRow('Chargen-ID',    i.batchId,    'static') +
+    dataRow('Passport-ID',   i.passportId, 'static') +
+    dataRow('QR-Code URL',   i.qrCodeLink ? `<a href="${i.qrCodeLink}" target="_blank">${i.qrCodeLink}</a>` : null, 'static') +
+    dataRow('AAS-Endpunkt',  i.aasEndpoint ? `<a href="${i.aasEndpoint}" target="_blank">${i.aasEndpoint}</a>` : null, 'static')
+  );
+
+  // ── CO₂ ───────────────────────────────────────────────────────────────────
+  if (cf._restricted) {
+    $('co2-total').innerHTML = '🔒';
+    $('co2-unit').textContent = 'Zugriff eingeschränkt';
+    $('co2-class').textContent = '—';
+    setHtml('co2Phases', sectionRestricted(cf));
+    setHtml('co2StudyList', '');
+  } else {
+    // CO₂ might be summarized (public role)
+    const isSummary = cf._summarized;
+    $('co2-total').innerHTML = fmtNum(cf.total, '');
+    $('co2-unit').textContent = cf.unit || 'kg CO₂e / kWh';
+    $('co2-class').textContent = cf.class || '—';
+
+    const phases = [
+      { name:'Rohstoffgewinnung', val:parseFloat(cf.rawMaterial), cls:'' },
+      { name:'Produktion',        val:parseFloat(cf.production),  cls:'production' },
+      { name:'Distribution',      val:parseFloat(cf.distribution),cls:'distribution' },
+      { name:'End-of-Life',       val:parseFloat(cf.endOfLife),   cls:'eol' },
+    ];
+    const total = parseFloat(cf.total) || 1;
+    setHtml('co2Phases', isSummary
+      ? '<p style="font-size:0.8rem;color:var(--text-dim);padding:8px 0">Detaillierte Phasenaufschlüsselung nicht verfügbar für diese Rolle.</p>'
+      : phases.map(ph => {
+          const pct = Math.round(ph.val / total * 100) || 0;
+          return `<div class="co2-phase">
+            <div class="co2-phase-header">
+              <span class="co2-phase-name">${ph.name}</span>
+              <span class="co2-phase-val">${isNaN(ph.val)?'—':ph.val} kg CO₂e/kWh (${pct}%)</span>
+            </div>
+            <div class="co2-bar-bg"><div class="co2-bar-fill ${ph.cls}" style="width:${pct}%"></div></div>
+          </div>`;
+        }).join('')
+    );
+    setHtml('co2StudyList',
+      dataRow('Methodik',         cf.methodology, 'static') +
+      dataRow('Drittprüfer',      cf.verifier,    'static') +
+      dataRow('Erneuerb. Energie',cf.renewableShare ? `${cf.renewableShare}% in Produktion` : null, 'static')
+    );
+  }
+
+  // ── MATERIALS ─────────────────────────────────────────────────────────────
+  setHtml('activeMaterialsList', mat._restricted
+    ? sectionRestricted(mat)
+    : dataRow('Kathodenmaterial', mat.cathode,     'static') +
+      dataRow('Anodenmaterial',   mat.anode,       'static') +
+      dataRow('Elektrolyt',       mat.electrolyte, 'static')
+  );
+  const minerals = [
+    { name:'KOBALT',  val: rc._restricted ? null : rc.cobalt,  target:'≥16% ab 2031' },
+    { name:'LITHIUM', val: rc._restricted ? null : rc.lithium, target:'≥6% ab 2031'  },
+    { name:'NICKEL',  val: rc._restricted ? null : rc.nickel,  target:'≥6% ab 2031'  },
+  ];
+  setHtml('recycledGrid', rc._restricted
+    ? sectionRestricted(rc)
+    : minerals.map(mn => `
+        <div class="recycled-pill">
+          <div class="r-mineral">${mn.name}</div>
+          <div class="r-val">${mn.val !== null && mn.val !== undefined ? mn.val : '—'}</div>
+          <div class="r-unit">%</div>
+          <div class="r-target">Ziel ${mn.target}</div>
+        </div>`).join('')
+  );
+  setHtml('originList', mat._restricted
+    ? ''
+    : dataRow('Kobalt-Herkunft',  mat.cobaltOrigin,  'static') +
+      dataRow('Lithium-Herkunft', mat.lithiumOrigin, 'static') +
+      dataRow('Nickel-Herkunft',  mat.nickelOrigin,  'static')
+  );
+
+  // ── PERFORMANCE ───────────────────────────────────────────────────────────
+  const soh = perf._restricted ? null : parseFloat(perf.soh);
+  $('soh-big').innerHTML = perf._restricted ? '🔒' : fmtNum(perf.soh, '%');
+  $('perf-cycles').textContent = perf._restricted ? '—' : (perf.cycles ?? '—');
+  $('perf-cycles-of').textContent = perf._restricted ? '' : `von ${perf.maxCycles||'—'} Zyklen Lebensdauer`;
+  $('perf-cap').innerHTML = perf._restricted ? '🔒' : fmtNum(perf.capacity, ' Ah');
+  $('perf-measured').textContent = perf._restricted ? '' : (perf.lastMeasured ? `Gemessen: ${perf.lastMeasured.slice(0,16).replace('T',' ')} UTC` : '');
+
+  if (!isNaN(soh) && soh !== null) {
+    const arcLen = 188.5;
+    const offset = arcLen - (soh / 100) * arcLen;
+    setTimeout(() => {
+      const arc = $('sohArc');
+      if (arc) { arc.style.strokeDashoffset = offset; arc.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)'; }
+    }, 200);
+  }
+
+  setHtml('tempList', perf._restricted
+    ? sectionRestricted(perf)
+    : dataRow('Max. Temperatur',      perf.maxTemp    ? `${perf.maxTemp} °C` : null, 'dynamic') +
+      dataRow('Ø Betriebstemp.',      perf.avgTemp    ? `${perf.avgTemp} °C` : null, 'dynamic') +
+      dataRow('Thermische Ereignisse',perf.thermalEvents ?? null, 'dynamic')
+  );
+  setHtml('designList',
+    dataRow('Erwartete Lebensdauer', perf.lifetimeYears ? `${perf.lifetimeYears} Jahre` : null, 'static') +
+    dataRow('Max. Ladezyklen',       perf.maxCycles, 'static')
+  );
+
+  // ── LIFECYCLE ─────────────────────────────────────────────────────────────
+  const lcStatus = lc._restricted ? null : (lc.status || i.status);
+  setHtml('lcStatusList', lc._restricted
+    ? sectionRestricted(lc)
+    : dataRow('Aktueller Status',  lcStatus, 'dynamic') +
+      dataRow('Statusänderung',    lc.statusDate?.slice(0,10), 'dynamic')
+  );
+  setHtml('dismantlingList',
+    dataRow('Demontage-Handbuch',  lc.dismantlingRef ? `<a href="${lc.dismantlingRef}" target="_blank">↗ Handbuch öffnen</a>` : null, 'static') +
+    dataRow('Rückgewinnungsrate',  lc.recyclability   ? `${lc.recyclability}%`  : null, 'static') +
+    dataRow('Recycling-Effizienz', lc.recyclingTarget ? `${lc.recyclingTarget}%`: null, 'static')
+  );
+
+  // ── CERTIFICATION ─────────────────────────────────────────────────────────
+  const certs = [
+    { icon:'🇪🇺', name:'EU-Konformitätserklärung', desc:'Konformität mit EU-Batterieverordnung 2023/1542', ref: cert.ceRef },
+    { icon:'🚛', name:'UN 38.3 Prüfnachweis',      desc:'Transport-Sicherheitsprüfung für Lithium-Batterien', ref: cert.un383Ref },
+    { icon:'⚡', name:cert.iecStandard || 'IEC 62133-2:2017', desc:'Sicherheitsstandard für wiederaufladbare Lithium-Systeme', ref: null },
+    { icon:'🏷️', name:`CO₂-Leistungsklasse ${cert.co2Class || '—'}`, desc:'EU-Klassifizierung des Carbon Footprint (A–G)', ref: null },
+  ];
+  setHtml('certList', certs.map(c => `
+    <div class="cert-item">
+      <div class="cert-icon">${c.icon}</div>
+      <div>
+        <div class="cert-name">${c.name}</div>
+        <div class="cert-desc">${c.desc}</div>
+      </div>
+      ${c.ref ? `<div class="cert-link"><a href="${c.ref}" target="_blank">↗ Öffnen</a></div>` : ''}
+    </div>`).join('')
+  );
+
+  // ── RAW JSON ──────────────────────────────────────────────────────────────
+  const rawData = p._raw?._restricted ? { _restricted: true, _requiredRoles: p._raw._requiredRoles } : (p._raw || p);
+  $('rawJson').textContent = JSON.stringify(rawData, null, 2);
+  $('rawToggle').addEventListener('click', () => {
+    $('rawJson').classList.toggle('visible');
+    $('rawToggle').textContent = $('rawJson').classList.contains('visible') ? 'JSON ausblenden' : 'JSON einblenden';
+  });
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    $(`tab-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>

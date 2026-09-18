@@ -1,0 +1,97 @@
+{
+  "id": "urn:uuid:aas-battery-module-001",
+  "idShort": "BatteryModule001",
+  "description": [
+    {
+      "language": "de",
+      "text": "AAS-Instanz für das Batteriemodul mit der Seriennummer BAT-EJOT-2025-00001. Enthält instanzspezifische Zustands-, Eigentums- und Lebenszyklusinformationen."
+    },
+    {
+      "language": "en",
+      "text": "AAS instance for battery module with serial number BAT-EJOT-2025-00001. Contains instance-specific state, ownership and lifecycle information."
+    }
+  ],
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "urn:ejot:battery:module:BAT-EJOT-2025-00001",
+    "assetType": "urn:idta:battery:industrial",
+    "specificAssetIds": [
+      {
+        "name": "serialNumber",
+        "value": "BAT-EJOT-2025-00001",
+        "externalSubjectId": {
+          "type": "ExternalReference",
+          "keys": [
+            {
+              "type": "GlobalReference",
+              "value": "urn:ejot:manufacturer:001"
+            }
+          ]
+        }
+      },
+      {
+        "name": "batchId",
+        "value": "BATCH-2025-01-A"
+      }
+    ]
+  },
+  "derivedFrom": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "AssetAdministrationShell",
+        "value": "urn:dbp:battery:model:001"
+      }
+    ]
+  },
+  "submodels": [
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:generalProductInformation:battery001:refVariant"
+        }
+      ]
+    },
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:circularity:battery001"
+        }
+      ]
+    },
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:ownership:battery001"
+        }
+      ]
+    },
+    {
+      "type": "ExternalReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "urn:dbp:submodel:labels:battery001"
+        }
+      ]
+    }
+  ],
+  "_metadata": {
+    "_comment": "Dies ist die INSTANZEBENE der AAS. Sie repräsentiert eine konkrete, physische Batterieeinheit. Über 'derivedFrom' ist diese Instanz mit dem zugehörigen Modelltyp verknüpft. Typbezogene Daten (Carbon Footprint, Materialzusammensetzung) werden von der Modell-AAS geerbt.",
+    "_dataLevel": "Instance",
+    "_parentModelId": "urn:dbp:battery:model:001",
+    "_regulatoryBasis": "EU-Batterieverordnung 2023/1542, Art. 77, Anhang XIII",
+    "_standardsBasis": "IEC 63278-1 (AAS), DIN DKE SPEC 99100:2025-02",
+    "_createdAt": "2025-01-15T08:00:00Z",
+    "_lastUpdated": "2025-01-15T08:00:00Z",
+    "_version": "1.0.0",
+    "_lifecycleStatus": "InUse",
+    "_responsibleEconomicOperator": "urn:ejot:manufacturer:001"
+  }
+}

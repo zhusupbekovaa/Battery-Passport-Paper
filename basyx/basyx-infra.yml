@@ -1,0 +1,18 @@
+infrastructures:
+  default:
+    name: Local BaSyx
+    components:
+      aasRegistry:
+        baseUrl: "http://localhost:8082/shell-descriptors"
+      submodelRegistry:
+        baseUrl: "http://localhost:8083/submodel-descriptors"
+      aasRepository:
+        baseUrl: "http://localhost:8081/shells"
+      submodelRepository:
+        baseUrl: "http://localhost:8081/submodels"
+      conceptDescriptionRepository:
+        baseUrl: "http://localhost:8081/concept-descriptions"
+      aasDiscovery:
+        baseUrl: "http://localhost:8084/lookup/shells"
+    security:
+      type: none

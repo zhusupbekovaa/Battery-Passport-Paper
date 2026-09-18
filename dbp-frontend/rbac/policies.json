@@ -1,0 +1,231 @@
+{
+  "_comment": "DBP RBAC-Konfiguration – Direkt abgeleitet aus Tabelle 5.6 und 5.7 der Masterarbeit (Zhusupbekova, Uni Siegen, 2025). Diese Datei ist die EINZIGE Stelle für Zugriffsänderungen.",
+
+  "_zugriffslevels": {
+    "full":    "Vollzugriff – alle Felder sichtbar, Schreiben erlaubt",
+    "read":    "Lesezugriff – alle Felder sichtbar, kein Schreiben",
+    "summary": "Zusammenfassung – nur öffentliche Teilfelder sichtbar",
+    "write":   "Schreibzugriff (impliziert read)",
+    "null":    "Kein Zugriff – Feld wird als gesperrt angezeigt"
+  },
+
+  "roles": {
+    "public":             { "label": "Öffentlich",            "color": "#7a9989", "border": "#2a3d32", "bg": "#1f2e27" },
+    "manufacturer":       { "label": "Hersteller",            "color": "#74c0fc", "border": "#2a4a5e", "bg": "#1a2e3d" },
+    "operator":           { "label": "Betreiber",             "color": "#ffd166", "border": "#4a3f22", "bg": "#2e2a1a" },
+    "recycler":           { "label": "Recycler",              "color": "#ff9f7f", "border": "#4a2a22", "bg": "#2e1a1a" },
+    "authority":          { "label": "Behörde",               "color": "#3ddc84", "border": "#2a4a2a", "bg": "#1a2e1a" },
+    "secondLifeOperator": { "label": "Second-Life-Betreiber", "color": "#c084fc", "border": "#3a2a4a", "bg": "#2a1a2e" },
+    "remanufacturer":     { "label": "Remanufacturer",        "color": "#fb923c", "border": "#4a3a22", "bg": "#2e2a1a" }
+  },
+
+  "rolePriority": [
+    "authority",
+    "manufacturer",
+    "secondLifeOperator",
+    "remanufacturer",
+    "recycler",
+    "operator"
+  ],
+
+  "summaryFields": {
+    "carbonFootprint": ["total", "class", "unit"],
+    "lifecycle":       ["status"]
+  },
+
+  "policies": {
+
+    "original": {
+      "_comment": "Tabelle 5.6 – Nutzungsphase (Original-Instanz)",
+
+      "identification": {
+        "public":       "read",
+        "manufacturer": "full",
+        "operator":     "read",
+        "recycler":     "read",
+        "authority":    "full"
+      },
+      "manufacturer": {
+        "public":       "read",
+        "manufacturer": "full",
+        "operator":     "read",
+        "recycler":     "read",
+        "authority":    "full"
+      },
+      "technical": {
+        "public":       "read",
+        "manufacturer": "full",
+        "operator":     "read",
+        "recycler":     "read",
+        "authority":    "full"
+      },
+      "carbonFootprint": {
+        "_comment": "Öffentlich nur Zusammenfassung (CO₂-Klasse + Gesamtwert)",
+        "public":       "summary",
+        "manufacturer": "full",
+        "operator":     null,
+        "recycler":     null,
+        "authority":    "full"
+      },
+      "materials": {
+        "public":       null,
+        "manufacturer": "full",
+        "operator":     null,
+        "recycler":     "read",
+        "authority":    "full"
+      },
+      "recycledContent": {
+        "public":       null,
+        "manufacturer": "full",
+        "operator":     null,
+        "recycler":     "read",
+        "authority":    "full"
+      },
+      "dueDiligence": {
+        "_comment": "Lieferkette – nur Hersteller und Behörde",
+        "public":       null,
+        "manufacturer": "full",
+        "operator":     null,
+        "recycler":     null,
+        "authority":    "full"
+      },
+      "ownership": {
+        "_comment": "Eigentum – Hersteller schreibt, Behörde liest alles",
+        "public":       null,
+        "manufacturer": "write",
+        "operator":     null,
+        "recycler":     null,
+        "authority":    "full"
+      },
+      "performance": {
+        "public":       null,
+        "manufacturer": "full",
+        "operator":     "read",
+        "recycler":     null,
+        "authority":    "full"
+      },
+      "lifecycle": {
+        "public":       "summary",
+        "manufacturer": "full",
+        "operator":     "read",
+        "recycler":     "read",
+        "authority":    "full"
+      },
+      "certification": {
+        "public":       "read",
+        "manufacturer": "full",
+        "operator":     "read",
+        "recycler":     "read",
+        "authority":    "full"
+      },
+      "governance": {
+        "public":       null,
+        "manufacturer": "full",
+        "operator":     "read",
+        "recycler":     null,
+        "authority":    "full"
+      }
+    },
+
+    "secondLife": {
+      "_comment": "Tabelle 5.7 – Second-Life-Phase (Wiederverwendung)",
+
+      "identification": {
+        "public":             "read",
+        "manufacturer":       "read",
+        "secondLifeOperator": "full",
+        "remanufacturer":     "read",
+        "recycler":           "read",
+        "authority":          "full"
+      },
+      "manufacturer": {
+        "public":             "read",
+        "manufacturer":       "read",
+        "secondLifeOperator": "full",
+        "remanufacturer":     "read",
+        "recycler":           "read",
+        "authority":          "full"
+      },
+      "technical": {
+        "public":             "read",
+        "manufacturer":       "read",
+        "secondLifeOperator": "full",
+        "remanufacturer":     "read",
+        "recycler":           "read",
+        "authority":          "full"
+      },
+      "carbonFootprint": {
+        "public":             "summary",
+        "manufacturer":       "read",
+        "secondLifeOperator": "write",
+        "remanufacturer":     null,
+        "recycler":           null,
+        "authority":          "full"
+      },
+      "materials": {
+        "public":             null,
+        "manufacturer":       "read",
+        "secondLifeOperator": null,
+        "remanufacturer":     "write",
+        "recycler":           "full",
+        "authority":          "full"
+      },
+      "recycledContent": {
+        "public":             null,
+        "manufacturer":       "read",
+        "secondLifeOperator": null,
+        "remanufacturer":     "write",
+        "recycler":           "full",
+        "authority":          "full"
+      },
+      "dueDiligence": {
+        "public":             null,
+        "manufacturer":       "read",
+        "secondLifeOperator": null,
+        "remanufacturer":     null,
+        "recycler":           null,
+        "authority":          "full"
+      },
+      "ownership": {
+        "public":             null,
+        "manufacturer":       "read",
+        "secondLifeOperator": "write",
+        "remanufacturer":     null,
+        "recycler":           null,
+        "authority":          "full"
+      },
+      "performance": {
+        "public":             null,
+        "manufacturer":       "read",
+        "secondLifeOperator": "write",
+        "remanufacturer":     "write",
+        "recycler":           null,
+        "authority":          "full"
+      },
+      "lifecycle": {
+        "public":             "summary",
+        "manufacturer":       "read",
+        "secondLifeOperator": "write",
+        "remanufacturer":     "write",
+        "recycler":           "read",
+        "authority":          "full"
+      },
+      "certification": {
+        "public":             "read",
+        "manufacturer":       "read",
+        "secondLifeOperator": "read",
+        "remanufacturer":     "write",
+        "recycler":           "read",
+        "authority":          "full"
+      },
+      "governance": {
+        "public":             null,
+        "manufacturer":       "read",
+        "secondLifeOperator": "full",
+        "remanufacturer":     "read",
+        "recycler":           null,
+        "authority":          "full"
+      }
+    }
+  }
+}

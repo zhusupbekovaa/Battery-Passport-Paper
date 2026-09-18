@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Battery Passport</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <script src="/auth.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0f0d;
+      --surface:   #111814;
+      --card:      #161e1a;
+      --border:    #1f2e27;
+      --green:     #3ddc84;
+      --green-dim: #2aad63;
+      --green-glow:#3ddc8422;
+      --text:      #e8f0ec;
+      --text-muted:#7a9989;
+      --text-dim:  #3d5447;
+      --accent:    #a8ffcc;
+      --red:       #ff6b6b;
+      --yellow:    #ffd166;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Glow blobs ── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+    }
+    .blob-1 { width: 600px; height: 600px; background: var(--green); top: -200px; left: -200px; }
+    .blob-2 { width: 400px; height: 400px; background: #00b4d8; bottom: -100px; right: -100px; }
+
+    /* ── Header ── */
+    header {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      background: rgba(10, 15, 13, 0.7);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem;
+      color: var(--green);
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      border: 2px solid var(--green);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .header-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative; z-index: 5;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 73px);
+      padding: 64px 24px;
+      text-align: center;
+    }
+
+    .eu-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 40px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .eu-badge span { color: var(--green); }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      line-height: 1.1;
+      margin-bottom: 16px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    h1 em {
+      font-style: italic;
+      color: var(--green);
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      line-height: 1.65;
+      margin-bottom: 56px;
+      font-weight: 300;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+
+    /* ── Search box ── */
+    .search-wrap {
+      width: 100%; max-width: 600px;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+
+    .search-box {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-box:focus-within {
+      border-color: var(--green-dim);
+      box-shadow: 0 0 0 3px var(--green-glow);
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      padding: 18px 20px;
+    }
+    .search-box input::placeholder { color: var(--text-dim); }
+
+    .search-box button {
+      background: var(--green);
+      border: none;
+      color: #0a0f0d;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0 28px;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .search-box button:hover { background: var(--accent); }
+
+    .sample-link {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    .sample-link a {
+      color: var(--green-dim);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .sample-link a:hover { color: var(--green); }
+
+    /* ── Stats row ── */
+    .stats {
+      display: flex; gap: 48px; margin-top: 80px;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .stat { text-align: center; }
+    .stat-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--green);
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    /* ── Feature cards ── */
+    .features {
+      position: relative; z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1px;
+      border-top: 1px solid var(--border);
+    }
+    .feat {
+      background: var(--surface);
+      padding: 40px 36px;
+      border-right: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .feat:last-child { border-right: none; }
+    .feat:hover { background: var(--card); }
+
+    .feat-icon {
+      width: 44px; height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin-bottom: 20px;
+      background: var(--card);
+    }
+    .feat h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+    .feat p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 5;
+      padding: 28px 48px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--green); }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 16px 20px; }
+      .stats { gap: 28px; flex-wrap: wrap; justify-content: center; }
+      footer { flex-direction: column; gap: 8px; text-align: center; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <header>
+    <a class="logo" href="/">
+      <div class="logo-icon">⚡</div>
+      DBP Viewer
+    </a>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="header-badge">EU 2023/1542 · AAS-konform</div>
+      <div id="authWidget" style="display:flex;align-items:center;gap:10px"></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="eu-badge">
+      <span>●</span> Digital Battery Pass · Batterieverordnung
+    </div>
+
+    <h1>Battery Passport<br><em>Viewer</em></h1>
+
+    <p class="subtitle">
+      Maschinenlesbare Batteriedaten nach EU-Batterieverordnung 2023/1542.
+      Geben Sie eine Batterie-ID oder einen AAS-Identifier ein.
+    </p>
+
+    <div class="search-wrap">
+      <form class="search-box" id="searchForm">
+        <input
+          type="text"
+          id="passportInput"
+          placeholder="urn:uuid:aas-battery-module-001"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button type="submit">Passport öffnen →</button>
+      </form>
+      <p class="sample-link">
+        Kein ID zur Hand?
+        <a id="sampleBtn">Beispiel-Passport laden</a>
+      </p>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val">8</div>
+        <div class="stat-label">Submodelle</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">Art.&nbsp;77</div>
+        <div class="stat-label">EU-Konform</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">IEC&nbsp;63278</div>
+        <div class="stat-label">AAS-Standard</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feat">
+      <div class="feat-icon">🔋</div>
+      <h3>Produktidentifikation</h3>
+      <p>Seriennummer, Modell-ID, Herstellerangaben und digitale Identifikatoren nach Anhang XIII.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🌿</div>
+      <h3>CO₂-Fußabdruck</h3>
+      <p>Lebenszyklusbasierte Klimabilanz nach ISO 14067 – aufgeschlüsselt nach Phasen.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">♻️</div>
+      <h3>Kreislaufwirtschaft</h3>
+      <p>Rezyklatanteile, Demontageinfos und Second-Life-Eignung auf einen Blick.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📊</div>
+      <h3>Performance & SoH</h3>
+      <p>Aktueller State of Health, Ladezyklen und Temperaturhistorie in Echtzeit.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>© 2025 DBP Prototype · Universität Siegen · Masterarbeit N. Zhusupbekova</span>
+    <span>Eclipse BaSyx · IEC 63278 · DIN DKE SPEC 99100:2025-02</span>
+  </footer>
+
+  <script>
+    // ── Auth Widget ────────────────────────────────────────────────────────
+    const ROLE_LABELS = {
+      public: 'Öffentlich', manufacturer: 'Hersteller', operator: 'Betreiber',
+      recycler: 'Recycler', authority: 'Behörde',
+      secondLifeOperator: 'Second-Life-Betreiber', remanufacturer: 'Remanufacturer',
+    };
+    const ROLE_COLORS = {
+      public:             '#7a9989',
+      manufacturer:       '#74c0fc',
+      operator:           '#ffd166',
+      recycler:           '#ff9f7f',
+      authority:          '#3ddc84',
+      secondLifeOperator: '#c084fc',
+      remanufacturer:     '#fb923c',
+    };
+    const btnStyle = `
+      background:none;border:1px solid var(--border);color:var(--text-muted);
+      font-family:'DM Sans',sans-serif;font-size:0.78rem;padding:6px 14px;
+      border-radius:8px;cursor:pointer;transition:all 0.2s;
+    `;
+
+    async function initAuth() {
+      const state = await auth.init();
+      const widget = document.getElementById('authWidget');
+
+      if (!state.rbacEnabled) {
+        widget.innerHTML = '<span style="font-size:0.7rem;color:var(--text-dim);font-family:'DM Mono',monospace">RBAC deaktiviert</span>';
+        return;
+      }
+
+      if (state.loggedIn) {
+        const color = ROLE_COLORS[state.role] || '#7a9989';
+        const label = ROLE_LABELS[state.role] || state.role;
+        const name  = state.userInfo?.name || '';
+        widget.innerHTML = `
+          <span style="font-family:'DM Mono',monospace;font-size:0.68rem;color:${color};
+            border:1px solid ${color}40;background:${color}15;padding:4px 10px;border-radius:20px">
+            ${label}
+          </span>
+          <span style="font-size:0.78rem;color:var(--text-muted)">${name}</span>
+          <button id="logoutBtn" style="${btnStyle}">Abmelden</button>
+        `;
+        document.getElementById('logoutBtn').onclick = () => auth.logout();
+      } else {
+        widget.innerHTML = `<button id="loginBtn" style="${btnStyle}border-color:var(--green-dim);color:var(--green)">Anmelden</button>`;
+        document.getElementById('loginBtn').onclick = () => auth.login();
+      }
+    }
+
+    initAuth();
+
+    // ── Search & Sample ────────────────────────────────────────────────────
+    document.getElementById('sampleBtn').addEventListener('click', () => {
+      document.getElementById('passportInput').value = 'urn:uuid:aas-battery-module-001';
+    });
+
+    document.getElementById('searchForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('passportInput').value.trim();
+      if (id) window.location.href = `/passport/${encodeURIComponent(id)}`;
+    });
+  </script>
+</body>
+</html>
